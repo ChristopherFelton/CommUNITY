@@ -1,0 +1,13 @@
+<h1>Volunteer Opportunities</h1>
+
+{% for opportunity in opportunities %}
+    <div>
+        <h2>{{ opportunity.title }}</h2>
+        <p>{{ opportunity.description }}</p>
+        <p>Location: {{ opportunity.location }}</p>
+        <p>Date: {{ opportunity.date }}</p>
+        <p>Capacity: {{ opportunity.capacity }}</p>
+    </div>
+{% else %}
+    <p>No opportunities found.</p>
+{% endfor %}
