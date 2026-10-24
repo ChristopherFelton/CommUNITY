@@ -1,0 +1,54 @@
+
+<h1>Create an Account</h1>
+
+<form action="{{ url_for('signup') }}" method="POST">
+    <label for="username">Username</label>
+    <input
+        type="text"
+        id="username"
+        name="username"
+        required
+    >
+
+    <label for="password">Password</label>
+    <input
+        type="password"
+        id="password"
+        name="password"
+        required
+    >
+
+    <div id="volunteer-name-field" hidden>
+        <label for="name">Name</label>
+        <input
+            type="text"
+            id="name"
+            name="name"
+        >
+    </div>
+    <input
+        type="checkbox"
+        id="volunteer"
+        name="volunteer"
+        value="yes"
+    >
+    <label for="volunteer">
+        I'm signing up as an volunteer
+    </label>
+    
+    <button type="submit">Sign Up</button>
+</form>
+
+<script>
+    const volunteerCheckbox = document.getElementById("volunteer");
+    const volunteerNameField = document.getElementById("volunteer-name-field");
+    const nameInput = document.getElementById("name");
+
+    function updateNameField() {
+        volunteerNameField.hidden = !volunteerCheckbox.checked;
+        nameInput.required = volunteerCheckbox.checked;
+    }
+
+    volunteerCheckbox.addEventListener("change", updateNameField);
+    updateNameField();
+</script>

@@ -1,0 +1,51 @@
+<h1>My opportunities</h1>
+{% for opportunity in opportunities %}
+    <div>
+        <h2>{{ opportunity.title }}</h2>
+        <p>{{ opportunity.description }}</p>
+        <p>Location: {{ opportunity.location }}</p>
+        <p>Date: {{ opportunity.date }}</p>
+        <p>Capacity: {{ opportunity.capacity }}</p>
+    </div>
+{% else %}
+    <p>No opportunities found.</p>
+{% endfor %}
+<div id="content-area">
+    <button id="createOpportunity">Create Volunteering Opportunity</button>
+   
+</div>
+
+<script>
+    const makeOpportunityButton = document.getElementById("createOpportunity");
+    const contentArea = document.getElementById("content-area");
+    makeOpportunityButton.addEventListener("click", function () {
+        contentArea.innerHTML = `
+            <h1>Create volunteering opportunity</h1>
+            <form
+                id="opportunity-form"
+                action="{{ url_for('organization_dashboard') }}"
+                method="POST"
+            >
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" required>
+
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date" required>
+
+                <label for="description">Description</label>
+                <input type="text" id="description" name="description" required>
+
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" required>
+
+                <label for="skills">Skills</label>
+                <input type="text" id="skills" name="skills" required>
+
+                <label for="capacity">Capacity</label>
+                <input type="number" id="capacity" name="capacity" step="1" required>
+
+                <button type="submit">Create Opportunity</button>
+            </form>
+        `;
+    });
+</script>
