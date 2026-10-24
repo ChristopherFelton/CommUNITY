@@ -18,13 +18,22 @@
         required
     >
 
-    <div id="volunteer-name-field" hidden>
+    <div id="volunteer-fields" hidden>
         <label for="name">Name</label>
         <input
             type="text"
             id="name"
             name="name"
         >
+        <fieldset>
+            <legend>Select your skills</legend>
+            {% for skill in skills %}
+                <label>
+                    <input type="checkbox" name="skills" value="{{ skill }}">
+                    {{ skill }}
+                </label>
+            {% endfor %}
+        </fieldset>
     </div>
     <input
         type="checkbox"
@@ -41,14 +50,14 @@
 
 <script>
     const volunteerCheckbox = document.getElementById("volunteer");
-    const volunteerNameField = document.getElementById("volunteer-name-field");
+    const volunteerFields = document.getElementById("volunteer-fields");
     const nameInput = document.getElementById("name");
 
-    function updateNameField() {
-        volunteerNameField.hidden = !volunteerCheckbox.checked;
+    function updateVolunteerFields() {
+        volunteerFields.hidden = !volunteerCheckbox.checked;
         nameInput.required = volunteerCheckbox.checked;
     }
 
-    volunteerCheckbox.addEventListener("change", updateNameField);
-    updateNameField();
+    volunteerCheckbox.addEventListener("change", updateVolunteerFields);
+    updateVolunteerFields();
 </script>

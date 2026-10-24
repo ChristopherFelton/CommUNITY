@@ -6,6 +6,33 @@ from dotenv import load_dotenv
 from sqlalchemy import text
 from extensions import db
 
+SKILLS = (
+    "Animal Care",
+    "Childcare",
+    "Communication",
+    "Compassion",
+    "Customer Service",
+    "Environmental Care",
+    "Environmental Knowledge",
+    "Event Coordination",
+    "Food Preparation",
+    "Gardening",
+    "Hospitality",
+    "Leadership",
+    "Manual Labor",
+    "Organization",
+    "Patience",
+    "Physical Agility",
+    "Physical Lifting",
+    "Public Speaking",
+    "Sanitation",
+    "Sorting",
+    "Teaching",
+    "Teamwork",
+    "Tech Savviness",
+    "Tutoring",
+)
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -28,6 +55,12 @@ def home():
 @app.route("/opportunities")
 def opportunities():
     all_opportunities = Opportunity.query.all()
+    userSkills = User.query.filter_by(username=session["username"]).first().skills
+    if userSkills == "":
+        userSkills = []
+    else:
+        userSkills=userSkills.split(",")
+    print(userSkills)
     return render_template(
         "opportunities.html",
         opportunities=all_opportunities
@@ -59,13 +92,18 @@ def signup():
         if request.form.get("volunteer") == "yes":
             volunteer = True
             name = request.form.get("name")
+            selected_skills = ", ".join(
+                skill for skill in SKILLS
+                if skill in request.form.getlist("skills")
+            )
         else:
             volunteer = False
             name = ""
+            selected_skills = ""
         new_user = User(
             username=username,
             hours=0,
-            skills="",
+            skills=selected_skills,
             password=password,
             volunteer=volunteer,
             opportunity_id="",
@@ -79,7 +117,7 @@ def signup():
             return redirect(url_for("opportunities"))
         else:
             return redirect(url_for("organization_dashboard"))
-    return render_template("signup.html")
+    return render_template("signup.html", skills=SKILLS)
 
 @app.route("/organization_dashboard",methods=["GET","POST"])
 def organization_dashboard():
