@@ -90,7 +90,7 @@
           <select id="sort" name="sort">
             {% for value, label in [
               ("best", "Best skill match"),
-              ("closest", "Nearest"),
+              ("nearest", "Nearest"),
               ("soonest", "Soonest")
             ] %}
             <option value="{{ value }}"{% if sort == value %} selected{% endif %}>{{ label }}</option>

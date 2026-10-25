@@ -271,10 +271,24 @@ def signup():
                 skill for skill in SKILLS
                 if skill in request.form.getlist("skills")
             )
+            latitude = request.form.get("latitude", type=float)
+            longitude = request.form.get("longitude", type=float)
+            if (
+                latitude is None
+                or longitude is None
+                or not isfinite(latitude)
+                or not isfinite(longitude)
+                or not -90 <= latitude <= 90
+                or not -180 <= longitude <= 180
+            ):
+                flash("Please enter a valid U.S. ZIP code so we can find your location.")
+                return redirect(url_for("signup"))
         else:
             volunteer = False
             name = ""
             selected_skills = ""
+            latitude = None
+            longitude = None
         new_user = User(
             username=username,
             hours=0,
@@ -282,7 +296,9 @@ def signup():
             password=password,
             volunteer=volunteer,
             opportunity_id="",
-            name = name
+            name = name,
+            latitude=latitude,
+            longitude=longitude,
         )
         db.session.add(new_user)
         db.session.commit()
