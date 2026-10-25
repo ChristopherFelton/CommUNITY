@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Log in · CommUNITY{% endblock %}
+
+{% block content %}
+<!-- Log in page: small logo linking home, then a card with the log-in form. Same layout as signup.html. -->
+<!-- TODO switch to url_for once the backend adds these routes (form action and the /signup link). -->
+<main class="auth-page">
+  <a class="logo logo--small" href="/"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
+
+  <!-- A paper note taped to the page, with a little heart doodle in the corner. -->
+  <div class="card card--note card--taped">
+    <svg class="doodle card-doodle card-doodle--heart" aria-hidden="true" focusable="false"><use href="#doodle-heart"></use></svg>
+    <h1 class="card-title">Welcome back</h1>
+
+    <!-- Messages from the backend, sent with flash() (e.g. "Invalid username or password.").
+         Shows nothing until the backend sends one. -->
+    {% with messages = get_flashed_messages() %}{% if messages %}<div class="form-message" role="alert">{% for m in messages %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+
+    <!-- The backend handles POST /login (checking the username and password).
+         Until it does, submitting this form returns "405 Method Not Allowed". -->
+    <form class="form" method="post" action="/login">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" name="username" id="username" required autocomplete="username">
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="button button-filled button-block">Log in</button>
+    </form>
+
+    <p class="auth-switch">Don't have an account? <a href="/signup">Sign up</a></p>
+  </div>
+</main>
+{% endblock %}

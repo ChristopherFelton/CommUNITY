@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{# ================= SAMPLE DATA - DELETE WHEN BACKEND PASSES REAL DATA =================
+   This value is used ONLY when the backend doesn't pass the real variable.
+   Real data contract (passed by the backend with render_template):
+     opportunity - id, title, description, location, date, start_time, end_time, capacity, spots_left,
+                   org_name, and optionally category (library, food, animals, environment, education,
+                   or other), image_url, org_about, hours, distance_miles, match_score (0-100),
+                   match_reasons (list of short strings), and in_list (true when the student
+                   already added it to their list)
+   To remove the sample, delete everything from here to "END SAMPLE DATA". #}
+{% set using_sample_data = opportunity is not defined %}
+{% set opportunity = opportunity if opportunity is defined else {
+  "id": 1,
+  "title": "Library Story Time Helper",
+  "org_name": "Maple Street Library",
+  "org_about": "Maple Street Library has been a gathering place for the neighborhood since 1962. Volunteers help run children's programs, reading nooks, and community events all year.",
+  "category": "library",
+  "description": "Help the children's librarian run our Saturday morning story time for kids ages 3 to 6 and their families. You'll greet each family at the door, help everyone find a spot on the rug, and set up the craft table before the story begins.\n\nDuring the story, you'll read one picture book aloud (we'll pick it together beforehand), and help the librarian with songs and finger plays. Little ones love a friendly new voice, so no acting experience is needed, just a warm smile and a loud-enough reading voice.\n\nAfter the story, you'll help the children with a simple craft, hand out stickers, and tidy up the room. Our librarian is there the whole time, so you're never on your own. Please arrive 15 minutes early for a short walk-through.\n\nStudents who volunteer here often tell us it was the highlight of their week. It's a great fit if you like reading aloud, working with little kids, or just want a calm and cheerful way to give back.",
+  "location": "Maple Street Library, Children's Room",
+  "date": "Sat, Oct 31",
+  "start_time": "10:00 AM",
+  "end_time": "12:00 PM",
+  "capacity": 6,
+  "spots_left": 4,
+  "hours": 2,
+  "distance_miles": 3.2,
+  "match_score": 92,
+  "match_reasons": ["Matches your skill: Reading aloud", "Matches your interest: Reading"]
+} %}
+{# ================= END SAMPLE DATA ================= #}
+
+{% from "_macros.html" import event_tile, fmt_date, fmt_time, ui_icon %}
+
+{# What's known about this event, worked out once. Optional fields are checked with "is defined". #}
+{% set o = opportunity %}
+{% set has_spots = o.spots_left is defined and o.spots_left is not none %}
+{% set is_full = has_spots and o.spots_left <= 0 %}
+{% set few_spots = has_spots and 0 < o.spots_left <= 3 %}
+{% set on_list = o.in_list is defined and o.in_list %}
+
+{# The blurb: the description on one line, cut at about 200 characters at a word boundary. #}
+{% set flat_description = o.description.split() | join(" ") %}
+{% set blurb = flat_description | truncate(200, false, "…", 0) %}
+
+{# The add button, in its three states. It's used in the header card and in the sticky phone bar. #}
+{% macro add_action(o) %}
+{% if on_list %}
+<button type="button" class="button button-large button-done" disabled>{{ ui_icon("check") }}On your list</button>
+<a class="text-link detail-view-link" href="/dashboard">View my events</a>
+{% elif is_full %}
+<button type="button" class="button button-large button-unavailable" disabled>This event is full</button>
+{% else %}
+{# TODO the backend teammate must add POST /opportunities/<id>/add: put this event on the student's
+   dashboard list, then redirect back here (flash() a message if something goes wrong).
+   Until it exists, submitting returns "405 Method Not Allowed". Nothing is saved or confirmed here. #}
+<form class="add-form" method="post" action="/opportunities/{{ o.id }}/add">
+  <button type="submit" class="button button-filled button-large">{{ ui_icon("plus") }}Add to my list</button>
+</form>
+{% endif %}
+{% endmacro %}
+
+{% block title %}{{ o.title }} · CommUNITY{% endblock %}
+
+{% block content %}
+<!-- Top bar for signed-in pages: small logo on the left, links on the right. -->
+<header class="topbar topbar--wide">
+  <a class="logo logo--small" href="/dashboard"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
+  <nav class="topbar-nav" aria-label="Account">
+    <a class="topbar-link" href="/dashboard">My events</a>
+    <!-- TODO switch to url_for once the backend adds that route (/logout). -->
+    <a class="topbar-link" href="/logout">Log out</a>
+  </nav>
+</header>
+
+<main class="detail-page">
+  {% if using_sample_data %}
+  <p class="sample-note">Showing sample data. The real event will come from the backend.</p>
+  {% endif %}
+
+  <a class="text-link back-link" href="/opportunities">{{ ui_icon("arrow-left") }}Back to results</a>
+
+  <!-- Messages from the backend, sent with flash() (e.g. "Something went wrong. Please try again.").
+       Shows nothing until the backend sends one. -->
+  {% with messages = get_flashed_messages() %}{% if messages %}<div class="form-message detail-message" role="alert">{% for m in messages %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+
+  <!-- Header card: a big picture on the left, the title and organization on the right. -->
+  <section class="card card--wide card--note card--taped detail-card" aria-labelledby="detail-title">
+    <div class="detail-main">
+      {{ event_tile(o) }}
+
+      <div class="detail-head">
+        <h1 class="event-title detail-title" id="detail-title">{{ o.title }}</h1>
+        <p class="detail-org">{{ o.org_name }}</p>
+        {% if o.match_score is defined and o.match_score is not none %}
+        {% set score = o.match_score | round | int %}
+        <p class="match-badge match-badge--{{ 'high' if score >= 85 else ('mid' if score >= 70 else 'low') }}">
+          <svg aria-hidden="true" focusable="false"><use href="#doodle-heart"></use></svg>
+          {{ score }}% match
+        </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="detail-cta">
+      {{ add_action(o) }}
+    </div>
+  </section>
+
+  <!-- The blurb, then the whole description for anyone who wants it. -->
+  <section class="card card--wide detail-about" aria-label="About this event">
+    <p class="detail-blurb">{{ blurb }}</p>
+    {% if blurb != flat_description %}
+    <details class="disclosure">
+      <summary>Read the full description</summary>
+      <div class="disclosure-body detail-full">
+        {# Blank lines in the description start a new paragraph; single line breaks are kept by CSS. #}
+        {% for paragraph in (o.description | replace("\r\n", "\n") | trim).split("\n\n") if paragraph | trim %}
+        <p>{{ paragraph | trim }}</p>
+        {% endfor %}
+      </div>
+    </details>
+    {% endif %}
+  </section>
+
+  <!-- The facts: when, where, how many spots, and hours earned. -->
+  <ul class="facts" aria-label="Event details">
+    <li class="fact">
+      <span class="fact-icon">{{ ui_icon("calendar") }}</span>
+      <div>
+        <p class="fact-label">Date and time</p>
+        <p class="fact-value">{{ fmt_date(o.date) }}{% if o.start_time is defined and o.start_time %}<br>{{ fmt_time(o.start_time) }}{% if o.end_time is defined and o.end_time %} – {{ fmt_time(o.end_time) }}{% endif %}{% endif %}</p>
+      </div>
+    </li>
+    <li class="fact">
+      <span class="fact-icon">{{ ui_icon("pin") }}</span>
+      <div>
+        <p class="fact-label">Location</p>
+        <p class="fact-value">{{ o.location }}{% if o.distance_miles is defined and o.distance_miles is not none %}<br><span class="fact-note">{{ "%g" | format(o.distance_miles | round(1)) }} {{ "mile" if o.distance_miles == 1 else "miles" }} away</span>{% endif %}</p>
+      </div>
+    </li>
+    {% if has_spots %}
+    <li class="fact{% if few_spots %} fact--few{% endif %}">
+      <span class="fact-icon">{{ ui_icon("people") }}</span>
+      <div>
+        <p class="fact-label">Spots left</p>
+        <p class="fact-value">
+          {% if is_full %}<span class="badge badge--full">Full</span>
+          {% elif few_spots %}Only {{ o.spots_left }} {{ "spot" if o.spots_left == 1 else "spots" }} left
+          {% else %}{{ o.spots_left }} spots left{% endif %}
+        </p>
+      </div>
+    </li>
+    {% endif %}
+    {% if o.hours is defined and o.hours is not none %}
+    <li class="fact">
+      <span class="fact-icon">{{ ui_icon("clock") }}</span>
+      <div>
+        <p class="fact-label">Volunteer hours</p>
+        <p class="fact-value">Earn {{ "%g" | format(o.hours | float) }} {{ "hour" if o.hours == 1 else "hours" }}</p>
+      </div>
+    </li>
+    {% endif %}
+  </ul>
+
+  {% if o.match_reasons is defined and o.match_reasons %}
+  <section class="detail-reasons" aria-labelledby="reasons-heading">
+    <h2 class="section-title" id="reasons-heading">Why this fits you</h2>
+    <ul class="reasons-list">
+      {% for reason in o.match_reasons %}
+      <li class="reason-chip">
+        <svg aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
+        {{ reason }}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if o.org_about is defined and o.org_about %}
+  <section class="card card--wide detail-org-card" aria-labelledby="org-heading">
+    <h2 class="section-title" id="org-heading">About {{ o.org_name }}</h2>
+    <p class="detail-org-about">{{ o.org_about }}</p>
+  </section>
+  {% endif %}
+</main>
+
+<!-- On phones the add button stays at the bottom of the screen, so it's always within reach. -->
+<div class="sticky-add">
+  {{ add_action(o) }}
+</div>
+{% endblock %}

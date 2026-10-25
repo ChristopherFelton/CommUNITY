@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Landing page: logo, tagline, and Sign up / Log in buttons, centered on the screen. -->
+<main class="hero">
+  <!-- Decorative doodles in the empty corners of the page (hidden on short screens). -->
+  <svg class="doodle hero-doodle hero-doodle--sun" aria-hidden="true" focusable="false"><use href="#doodle-sun"></use></svg>
+  <svg class="doodle hero-doodle hero-doodle--house" aria-hidden="true" focusable="false"><use href="#doodle-house"></use></svg>
+  <svg class="doodle hero-doodle hero-doodle--sprout" aria-hidden="true" focusable="false"><use href="#doodle-sprout"></use></svg>
+
+  <!-- The wrapper adds a soft glow behind the logo and room above it for two small doodles. -->
+  <div class="hero-title-wrap">
+    <svg class="doodle title-doodle title-doodle--left" aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
+    <svg class="doodle title-doodle title-doodle--right" aria-hidden="true" focusable="false"><use href="#doodle-heart"></use></svg>
+    <!-- Two spans so "Comm" and "UNITY" can use different fonts. Keep them touching (no space). -->
+    <h1 class="logo"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></h1>
+  </div>
+
+  <p class="hero-tagline">Find community service opportunities near you.</p>
+
+  <!-- TODO switch to url_for once the backend adds these routes. -->
+  <div class="button-row">
+    <a class="button button-outline" href="/signup">Sign up</a>
+    <a class="button button-filled" href="/login">Log in</a>
+  </div>
+</main>
+{% endblock %}
