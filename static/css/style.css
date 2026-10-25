@@ -1828,6 +1828,58 @@ body::before {
   z-index: 2;
 }
 
+.opportunity-skill-filters {
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.opportunity-skill-filters legend {
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+}
+
+.opportunity-skill-filters .chip-cloud {
+  margin-top: 0.75rem;
+}
+
+.opportunity-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.opportunity-controls .sort-field select {
+  min-width: 10rem;
+}
+
+.location-filter-hint {
+  flex-basis: 100%;
+}
+
+.opportunity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0;
+}
+
+.opportunity-tag {
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--color-input-border);
+  border-radius: 9999px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.opportunity-tag--match {
+  border-color: var(--color-sage);
+  background-color: color-mix(in srgb, var(--color-sage) 22%, var(--color-cream));
+  color: var(--color-text);
+  font-weight: 700;
+}
+
 /* ---- Search bar: one big rounded pill holding the icon, the input, the clear "x", and Search ---- */
 .search-bar {
   display: flex;

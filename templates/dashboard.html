@@ -1,129 +1,41 @@
 {% extends "base.html" %}
-
-{# ================= SAMPLE DATA - DELETE WHEN BACKEND PASSES REAL DATA =================
-   These values are used ONLY when the backend doesn't pass the real variables.
-   Real data contract (passed by the backend with render_template):
-     user             - has first_name
-     signups          - list of opportunities, each with title, description, location, date (datetime), capacity,
-                        and optionally image_url (logo or activity photo) and category (library, food,
-                        animals, environment, education, or other)
-     hours_completed  - number, this month
-     hours_goal       - number, this month
-   To remove the samples, delete everything from here to "END SAMPLE DATA". #}
-{% set using_sample_data = user is not defined or signups is not defined
-                           or hours_completed is not defined or hours_goal is not defined %}
-{% set user = user if user is defined else {"first_name": "Alex"} %}
-{% set hours_completed = hours_completed if hours_completed is defined else 8 %}
-{% set hours_goal = hours_goal if hours_goal is defined else 20 %}
-{% set signups = signups if signups is defined else [
-  {
-    "title": "Library Story Time Helper",
-    "description": "Help the children's librarian run Saturday story time: greet families, hand out craft supplies, and read a picture book aloud to kids ages 3 to 6.",
-    "location": "Maple Street Public Library",
-    "date": "Sat, Nov 7 - 10:00 AM",
-    "capacity": 4,
-    "category": "library"
-  },
-  {
-    "title": "Riverside Park Cleanup",
-    "description": "Join neighbors to pick up litter along the river trail and sort recycling. Gloves, bags, and grabbers are provided; wear closed-toe shoes.",
-    "location": "Riverside Park, North Entrance",
-    "date": "Sun, Nov 15 - 9:00 AM",
-    "capacity": 25,
-    "category": "environment"
-  },
-  {
-    "title": "Food Bank Sorting Shift",
-    "description": "Sort and pack donated food into family boxes for the holiday distribution. No experience needed; shifts start with a short safety briefing.",
-    "location": "Eastside Community Food Bank",
-    "date": "Wed, Nov 18 - 4:00 PM",
-    "capacity": 12,
-    "category": "food"
-  }
-] %}
-{# ================= END SAMPLE DATA ================= #}
-
-{# Picture tiles for the event cards (shared with the organization dashboard). #}
 {% from "_macros.html" import event_tile %}
 
-{% block title %}Dashboard · CommUNITY{% endblock %}
+{% block title %}My Dashboard · CommUNITY{% endblock %}
 
 {% block content %}
-{# Progress bar math: percent of the goal, capped at 100, and 0 if the goal is 0 (no division by zero). #}
-{% set hours_percent = ([hours_completed / hours_goal * 100, 100] | min) | round | int if hours_goal > 0 else 0 %}
-{% set hours_left = hours_goal - hours_completed %}
-{# The garden: 10 seedlings, one sprouts for every 10% of the goal. #}
-{% set seedlings_total = 10 %}
-{% set seedlings_grown = (hours_percent / 10) | int %}
-{% set goal_reached = hours_goal > 0 and hours_left <= 0 %}
-
-<!-- Top bar for signed-in pages: small logo on the left, Log out on the right. -->
-<header class="topbar">
-  <a class="logo logo--small" href="/dashboard"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
-  <!-- TODO switch to url_for once the backend adds that route (/logout). -->
-  <a class="topbar-link" href="/logout">Log out</a>
+<header class="topbar topbar--wide">
+  <a class="logo logo--small" href="{{ url_for('dashboard') }}">
+    <span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span>
+  </a>
+  <nav class="topbar-nav" aria-label="Account">
+    <a class="topbar-link" href="{{ url_for('opportunities') }}">Find opportunities</a>
+    <a class="topbar-link" href="{{ url_for('logout') }}">Log out</a>
+  </nav>
 </header>
 
 <main class="dashboard">
-  {% if using_sample_data %}
-  <p class="sample-note">Showing sample data. The real data will come from the backend.</p>
-  {% endif %}
+  <h1 class="dashboard-title">{{ user.name or user.username }}</h1>
+  <p class="dashboard-subtitle">@{{ user.username }}</p>
 
-  <h1 class="dashboard-title">Welcome back, {{ user.first_name }}</h1>
-  <p class="dashboard-subtitle">Here's what's coming up.</p>
-
-  <!-- Hours this month: a little garden of seedlings that sprouts as hours are completed. -->
-  <section class="card card--wide card--note hours-card{% if goal_reached %} hours-card--goal{% endif %}" aria-labelledby="hours-heading">
-    <svg class="doodle card-doodle card-doodle--sun" aria-hidden="true" focusable="false"><use href="#doodle-sun"></use></svg>
-    <h2 class="section-title" id="hours-heading">Your hours this month</h2>
-    <p class="hours-count"><strong>{{ hours_completed }}</strong> of {{ hours_goal }} hours</p>
-
-    {# The progress semantics stay on this element; the seedlings inside are decoration. #}
-    <div class="progress garden" role="progressbar" aria-labelledby="hours-heading"
-         aria-valuenow="{{ hours_completed }}" aria-valuemin="0" aria-valuemax="{{ hours_goal }}"
-         aria-valuetext="{{ hours_completed }} of {{ hours_goal }} hours">
-      {% for i in range(seedlings_total) %}
-      {% if i < seedlings_grown %}
-      <svg class="garden-plant garden-plant--grown" aria-hidden="true" focusable="false"><use href="#doodle-sprout"></use></svg>
-      {% else %}
-      <svg class="garden-plant" aria-hidden="true" focusable="false"><use href="#doodle-seed"></use></svg>
-      {% endif %}
-      {% endfor %}
-    </div>
-
-    <p class="hours-note">
-      {% if hours_left <= 0 %}Goal reached!
-      {% elif hours_left == 1 %}1 hour to go
-      {% else %}{{ hours_left }} hours to go{% endif %}
-    </p>
-
-    {# Warm words that celebrate what the user has already given. #}
-    <p class="hours-cheer">
-      {% if goal_reached %}
-      <svg class="cheer-heart" aria-hidden="true" focusable="false"><use href="#doodle-heart"></use></svg>
-      You reached your {{ hours_goal }}-hour goal. Your community can feel the difference. Thank you!
-      {% elif hours_completed > 0 %}
-      You've given {{ hours_completed }} {{ "hour" if hours_completed == 1 else "hours" }} this month. Thank you for showing up!
-      {% else %}
-      Every hour counts. Your first one is waiting for you.
-      {% endif %}
+  <section class="card card--wide card--note" aria-labelledby="hours-heading">
+    <h2 class="section-title" id="hours-heading">Total time volunteered</h2>
+    <p class="hours-count">
+      <strong>{{ "%g" | format(user.hours) }}</strong>
+      {{ "hour" if user.hours == 1 else "hours" }}
     </p>
   </section>
 
-  <!-- Opportunities the user signed up for. -->
   <section class="events" aria-labelledby="events-heading">
-    <h2 class="section-title" id="events-heading">Upcoming events</h2>
+    <h2 class="section-title" id="events-heading">Events I’ve signed up for</h2>
 
-    {# Each event looks like a note taped to a bulletin board, with a picture pinned on the left. #}
     {% for event in signups %}
     <article class="card card--wide card--note card--taped event-card">
       {{ event_tile(event) }}
-
       <div class="event-body">
         <h3 class="event-title">{{ event.title }}</h3>
         <p class="event-meta">
-          {# Sample dates are plain strings; real dates are datetimes from the backend. #}
-          <span>{% if event.date is string %}{{ event.date }}{% else %}{{ event.date.strftime('%a, %b %d - %I:%M %p') }}{% endif %}</span>
+          <span>{{ event.date.strftime("%a, %b %d - %I:%M %p") }}</span>
           <span>{{ event.location }}</span>
         </p>
         <p class="event-description">{{ event.description | truncate(120) }}</p>
@@ -131,15 +43,9 @@
     </article>
     {% else %}
     <div class="card card--wide card--note empty-state">
-      <svg class="doodle empty-doodle" aria-hidden="true" focusable="false"><use href="#doodle-sprout"></use></svg>
-      <p>You haven't signed up for anything yet.</p>
+      <p>You haven’t signed up for any events yet.</p>
     </div>
     {% endfor %}
   </section>
-
-  <!-- TODO update this link once the team decides the route for the onboarding/matching flow. -->
-  <div class="dashboard-actions">
-    <a class="button button-filled" href="/opportunities">Find opportunities</a>
-  </div>
 </main>
 {% endblock %}
