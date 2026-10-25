@@ -1,74 +1,94 @@
+{% extends "base.html" %}
 
-<h1>Create an Account</h1>
+{% block title %}Sign up · CommUNITY{% endblock %}
 
-<form id="signup-form" action="{{ url_for('signup') }}" method="POST">
-    <label for="username">Username</label>
-    <input
-        type="text"
-        id="username"
-        name="username"
-        required
-    >
+{% block content %}
+<!-- Sign up page: small logo linking home, then a card with the sign-up form. -->
+<main class="auth-page">
+  <a class="logo logo--small" href="{{ url_for('home') }}"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
 
-    <label for="password">Password</label>
-    <input
-        type="password"
-        id="password"
-        name="password"
-        required
-    >
+  <!-- A paper note taped to the page, with a little sprout doodle in the corner. -->
+  <div class="card card--note card--taped card--form-wide">
+    <svg class="doodle card-doodle card-doodle--sprout" aria-hidden="true" focusable="false"><use href="#doodle-sprout"></use></svg>
+    <h1 class="card-title">Create your account</h1>
 
-    <div id="volunteer-fields" hidden>
-        <label for="name">Name</label>
-        <input
-            type="text"
-            id="name"
-            name="name"
-        >
-        <label for="zip_code">ZIP code (United States)</label>
-        <input
-            type="text"
-            id="zip_code"
-            autocomplete="postal-code"
-            inputmode="numeric"
-            pattern="[0-9]{5}(-[0-9]{4})?"
-            maxlength="10"
-        >
-        <input type="hidden" id="latitude" name="latitude">
-        <input type="hidden" id="longitude" name="longitude">
-        <p id="location-status" aria-live="polite">
+    <!-- Errors from the backend (the "error" it passes, and anything sent with flash()). -->
+    {% with messages = get_flashed_messages() %}{% if error or messages %}<div class="form-message" role="alert">{% if error %}<p>{{ error }}</p>{% endif %}{% for m in messages %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+
+    <form id="signup-form" class="form" method="post" action="{{ url_for('signup') }}">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" name="username" id="username" required maxlength="16" autocomplete="username"
+               aria-describedby="username-hint">
+        <p class="field-hint" id="username-hint">Up to 16 characters.</p>
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" required minlength="8"
+               autocomplete="new-password" aria-describedby="password-hint">
+        <p class="field-hint" id="password-hint">At least 8 characters.</p>
+      </div>
+
+      <!-- The backend reads "volunteer": "yes" for a volunteer, anything else for an organization.
+           Neither is preselected, and "required" makes the browser ask the user to pick one. -->
+      <fieldset class="field">
+        <legend>I am signing up as</legend>
+
+        <div class="choice-option">
+          <input type="radio" name="volunteer" value="yes" id="role-volunteer" required>
+          <label for="role-volunteer">A volunteer looking for opportunities</label>
+        </div>
+
+        <div class="choice-option">
+          <input type="radio" name="volunteer" value="no" id="role-organization" required>
+          <label for="role-organization">An organization looking for volunteers</label>
+        </div>
+      </fieldset>
+
+      <!-- Only for volunteers (the script below shows it). -->
+      <div id="volunteer-fields" class="form" hidden>
+        <div class="field">
+          <label for="name">Your name</label>
+          <input type="text" name="name" id="name" autocomplete="name">
+        </div>
+
+        <div class="field">
+          <label for="zip_code">ZIP code (United States)</label>
+          {# No name on purpose: the ZIP code itself is never sent, only the coordinates found from it. #}
+          <input type="text" id="zip_code" autocomplete="postal-code" inputmode="numeric"
+                 pattern="[0-9]{5}(-[0-9]{4})?" maxlength="10" aria-describedby="location-status">
+          <input type="hidden" id="latitude" name="latitude">
+          <input type="hidden" id="longitude" name="longitude">
+          <p class="field-hint" id="location-status" aria-live="polite">
             Google Maps will process your ZIP code to find approximate coordinates.
             We save the coordinates, not the ZIP code.
-        </p>
-        <fieldset>
-            <legend>Select your skills</legend>
-            {% for skill in skills %}
-                <label>
-                    <input type="checkbox" name="skills" value="{{ skill }}">
-                    {{ skill }}
-                </label>
-            {% endfor %}
-        </fieldset>
-    </div>
-    <input
-        type="checkbox"
-        id="volunteer"
-        name="volunteer"
-        value="yes"
-    >
-    <label for="volunteer">
-        I'm signing up as an volunteer
-    </label>
-    
-    <button type="submit">Sign Up</button>
-</form>
+          </p>
+        </div>
 
-{% if error %}
-    <p role="alert">{{ error }}</p>
-{% endif %}
+        <fieldset class="field">
+          <legend>Select your skills</legend>
+          <div class="chip-fallback">
+            {% for skill in skills %}
+            <label class="chip-check">
+              <input type="checkbox" name="skills" value="{{ skill }}">
+              <span>{{ skill }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+      </div>
+
+      <button type="submit" class="button button-filled button-block">Sign up</button>
+    </form>
+
+    <p class="auth-switch">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+  </div>
+</main>
 
 <script>
-    const volunteerCheckbox = document.getElementById("volunteer");
+    const volunteerRadio = document.getElementById("role-volunteer");
+    const organizationRadio = document.getElementById("role-organization");
     const volunteerFields = document.getElementById("volunteer-fields");
     const nameInput = document.getElementById("name");
     const zipCodeInput = document.getElementById("zip_code");
@@ -80,9 +100,9 @@
     let signupInProgress = false;
 
     function updateVolunteerFields() {
-        volunteerFields.hidden = !volunteerCheckbox.checked;
-        nameInput.required = volunteerCheckbox.checked;
-        zipCodeInput.required = volunteerCheckbox.checked;
+        volunteerFields.hidden = !volunteerRadio.checked;
+        nameInput.required = volunteerRadio.checked;
+        zipCodeInput.required = volunteerRadio.checked;
     }
 
     function loadGeocoder() {
@@ -133,7 +153,7 @@
     }
 
     signupForm.addEventListener("submit", async (event) => {
-        if (!volunteerCheckbox.checked || signupInProgress) {
+        if (!volunteerRadio.checked || signupInProgress) {
             if (signupInProgress) {
                 event.preventDefault();
             }
@@ -177,6 +197,9 @@
         }
     });
 
-    volunteerCheckbox.addEventListener("change", updateVolunteerFields);
+    // The radios are one group, so a change fires on whichever one was just picked.
+    volunteerRadio.addEventListener("change", updateVolunteerFields);
+    organizationRadio.addEventListener("change", updateVolunteerFields);
     updateVolunteerFields();
 </script>
+{% endblock %}

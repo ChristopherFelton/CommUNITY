@@ -1,54 +1,58 @@
+{% extends "base.html" %}
 
-<h1>My opportunities</h1>
+{# Picture tiles and date formatting shared with the other pages. #}
+{% from "_macros.html" import event_tile, fmt_date %}
 
-{% for opportunity in opportunities %}
-    <div>
-        <h2>{{ opportunity.title }}</h2>
-        <p>{{ opportunity.description }}</p>
-        <p>Location: {{ opportunity.location }}</p>
-        <p>Date: {{ opportunity.date }}</p>
-        <p>Capacity: {{ opportunity.capacity }}</p>
+{% block title %}My opportunities · CommUNITY{% endblock %}
+
+{% block content %}
+<!-- Top bar for signed-in pages: small logo on the left, Log out on the right. -->
+<header class="topbar">
+  <a class="logo logo--small" href="{{ url_for('organization_dashboard') }}"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
+  <a class="topbar-link" href="{{ url_for('logout') }}">Log out</a>
+</header>
+
+<main class="dashboard">
+  <h1 class="dashboard-title">My opportunities</h1>
+  <p class="dashboard-subtitle">The events your organization has posted.</p>
+
+  <!-- The button below turns into the create form (built by the script at the bottom of this page). -->
+  <div id="content-area" class="card card--wide card--note org-create">
+    <button type="button" id="createOpportunity" class="button button-filled">Create volunteering opportunity</button>
+  </div>
+
+  <section class="events" aria-labelledby="posted-heading">
+    <h2 class="section-title" id="posted-heading">Posted events</h2>
+
+    {% for opportunity in opportunities %}
+    <article class="card card--wide card--note card--taped event-card">
+      {{ event_tile(opportunity) }}
+
+      <div class="event-body">
+        <h3 class="event-title">{{ opportunity.title }}</h3>
+        <p class="event-meta">
+          <span>{{ fmt_date(opportunity.date) }}</span>
+          <span>{{ opportunity.location }}</span>
+          <span>{{ opportunity.capacity }} {{ "volunteer" if opportunity.capacity == 1 else "volunteers" }} needed</span>
+        </p>
+        <p class="event-description">{{ opportunity.description | truncate(120) }}</p>
+        {% if opportunity.skills %}
+        <ul class="reasons-list org-skills" aria-label="Skills wanted">
+          {% for skill in opportunity.skills.split(",") if skill | trim %}
+          <li class="reason-chip">{{ skill | trim }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </article>
+    {% else %}
+    <div class="card card--wide card--note empty-state">
+      <svg class="doodle empty-doodle" aria-hidden="true" focusable="false"><use href="#doodle-sprout"></use></svg>
+      <p>You haven't posted any events yet.</p>
     </div>
-{% else %}
-    <p>No opportunities found.</p>
-{% endfor %}
-
-<div id="content-area">
-    <button type="button" id="createOpportunity">
-        Create Volunteering Opportunity
-    </button>
-</div>
-
-<style>
-    #map {
-        height: 350px;
-        width: 100%;
-        margin: 12px 0;
-        border-radius: 8px;
-    }
-
-    #address-search {
-        margin: 12px 0;
-    }
-
-    gmp-place-autocomplete {
-        width: 100%;
-    }
-
-    .form-field {
-        display: block;
-        margin: 12px 0;
-    }
-
-    .form-field input {
-        display: block;
-        width: 100%;
-        max-width: 500px;
-        box-sizing: border-box;
-        padding: 8px;
-    }
-</style>
-
+    {% endfor %}
+  </section>
+</main>
 
 <script>
     const makeOpportunityButton =
@@ -62,53 +66,57 @@
 
     makeOpportunityButton.addEventListener("click", function () {
         contentArea.innerHTML = `
-            <h1>Create volunteering opportunity</h1>
+            <h2 class="section-title">Create volunteering opportunity</h2>
 
             <form
                 id="opportunity-form"
+                class="form"
                 action="{{ url_for('organization_dashboard') }}"
                 method="POST"
             >
-                <label class="form-field">
-                    Title
-                    <input type="text" name="title" required>
-                </label>
+                <div class="field">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
 
-                <label class="form-field">
-                    Date
-                    <input type="date" name="date" required>
-                </label>
+                <div class="field">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
 
-                <label class="form-field">
-                    Description
-                    <input type="text" name="description" required>
-                </label>
+                <div class="field">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="4" required></textarea>
+                </div>
 
-                <label class="form-field">
-                    Location / address
+                <div class="field">
+                    <label for="location">Location / address</label>
                     <input
                         type="text"
                         id="location"
                         name="location"
                         placeholder="Search for an address below"
+                        aria-describedby="coordinate-status"
                         required
                         readonly
                     >
-                </label>
+                </div>
 
-                <h3>Select the event location</h3>
-                <p>
-                    Search for an address, select a suggestion,
-                    or click the map and drag the pin.
-                    The address will update automatically.
-                </p>
+                <div class="field">
+                    <p class="location-title">Select the event location</p>
+                    <p class="field-hint">
+                        Search for an address, select a suggestion,
+                        or click the map and drag the pin.
+                        The address will update automatically.
+                    </p>
 
-                <div id="address-search"></div>
-                <div id="map"></div>
+                    <div id="address-search"></div>
+                    <div id="map"></div>
 
-                <p id="coordinate-status" aria-live="polite">
-                    Search for an address or click the map.
-                </p>
+                    <p class="field-hint" id="coordinate-status" aria-live="polite">
+                        Search for an address or click the map.
+                    </p>
+                </div>
 
                 <input
                     type="hidden"
@@ -122,31 +130,38 @@
                     name="longitude"
                 >
 
-                <label class="form-field">
-                    Skills (comma-separated)
+                <div class="field">
+                    <label for="skills">Skills (comma-separated)</label>
                     <input
                         type="text"
+                        id="skills"
                         name="skills"
                         placeholder="Tutoring, Python, First aid"
                         required
                     >
-                </label>
+                </div>
 
-                <label class="form-field">
-                    Capacity
+                <div class="field">
+                    <label for="capacity">Number of volunteers needed</label>
                     <input
                         type="number"
+                        id="capacity"
                         name="capacity"
                         min="1"
                         step="1"
+                        inputmode="numeric"
                         required
                     >
-                </label>
+                </div>
 
-                <button type="submit">
+                <button type="submit" class="button button-filled button-block">
                     Create Opportunity
                 </button>
             </form>
+
+            <p class="auth-switch">
+                <a href="{{ url_for('organization_dashboard') }}">Cancel</a>
+            </p>
         `;
 
         loadGoogleMaps();
@@ -453,3 +468,4 @@
         });
     };
 </script>
+{% endblock %}

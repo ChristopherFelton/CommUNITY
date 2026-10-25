@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{# Picture tiles and date/time formatting shared with the volunteer dashboard. #}
+{% from "_macros.html" import event_tile, fmt_date, fmt_time, fmt_signed_up %}
+
+{# ================= SAMPLE DATA - DELETE WHEN BACKEND PASSES REAL DATA =================
+   These values are used ONLY when the backend doesn't pass the real variables.
+   Real data contract (passed by the backend with render_template):
+     org              - has name
+     upcoming_events  - list of events
+     past_events      - list of events
+   Each event has: id, title, description, location, date, start_time, end_time, capacity,
+   category (optional), image_url (optional), and signups (a list of volunteers, each with
+   first_name, last_name, username, signed_up_at). Dates and times can be datetime/date/time objects.
+   To remove the samples, delete everything from here to "END SAMPLE DATA". #}
+{% set using_sample_data = org is not defined or upcoming_events is not defined or past_events is not defined %}
+{% set org = org if org is defined else {"name": "Maple Street Library"} %}
+{% set upcoming_events = upcoming_events if upcoming_events is defined else [
+  {
+    "id": 101,
+    "title": "Saturday Story Time Helpers",
+    "description": "Read picture books aloud, help with a simple craft, and welcome families to our cozy children's corner. Great for anyone who loves kids and books.",
+    "location": "Maple Street Library, 214 Maple St",
+    "date": "Sat, Nov 7",
+    "start_time": "10:00 AM",
+    "end_time": "12:00 PM",
+    "capacity": 6,
+    "category": "library",
+    "signups": [
+      {"first_name": "Priya", "last_name": "Patel", "username": "priyareads", "signed_up_at": "Oct 26"},
+      {"first_name": "Marcus", "last_name": "Lee", "username": "marcuslee", "signed_up_at": "Oct 27"},
+      {"first_name": "Sofia", "last_name": "Hernandez", "username": "sofiah", "signed_up_at": "Oct 28"},
+      {"first_name": "Jamal", "last_name": "Carter", "username": "jcarter", "signed_up_at": "Oct 30"},
+      {"first_name": "Emma", "last_name": "Nguyen", "username": "emmanguyen", "signed_up_at": "Nov 1"}
+    ]
+  },
+  {
+    "id": 102,
+    "title": "Teen Homework Help Night",
+    "description": "Sit with middle and high school students as they work through math and reading homework. Patience matters more than having all the answers.",
+    "location": "Maple Street Library, Study Room B",
+    "date": "Tue, Nov 10",
+    "start_time": "4:00 PM",
+    "end_time": "6:00 PM",
+    "capacity": 8,
+    "category": "education",
+    "signups": [
+      {"first_name": "Diego", "last_name": "Ramirez", "username": "diegor", "signed_up_at": "Oct 29"},
+      {"first_name": "Hannah", "last_name": "Kim", "username": "hannahk", "signed_up_at": "Nov 2"}
+    ]
+  },
+  {
+    "id": 103,
+    "title": "Reading Garden Planting Day",
+    "description": "Help plant bulbs and native flowers around the library's reading garden so it's blooming by spring. Gloves and tools provided; dress for dirt.",
+    "location": "Maple Street Library, back garden",
+    "date": "Sat, Nov 21",
+    "start_time": "9:00 AM",
+    "end_time": "11:30 AM",
+    "capacity": 10,
+    "category": "environment",
+    "signups": []
+  }
+] %}
+{% set past_events = past_events if past_events is defined else [
+  {
+    "id": 90,
+    "title": "Fall Book Sale Setup",
+    "description": "Sort donated books and set up tables for the annual fall book sale.",
+    "location": "Maple Street Library, Community Room",
+    "date": "Sat, Oct 17",
+    "start_time": "9:00 AM",
+    "end_time": "1:00 PM",
+    "capacity": 8,
+    "category": "library",
+    "signups": [
+      {"first_name": "Omar", "last_name": "Haddad", "username": "omarh", "signed_up_at": "Oct 5"},
+      {"first_name": "Grace", "last_name": "O'Brien", "username": "graceob", "signed_up_at": "Oct 6"},
+      {"first_name": "Lily", "last_name": "Chen", "username": "lilychen", "signed_up_at": "Oct 9"},
+      {"first_name": "Marcus", "last_name": "Lee", "username": "marcuslee", "signed_up_at": "Oct 12"}
+    ]
+  }
+] %}
+{# ================= END SAMPLE DATA ================= #}
+
+{# Small original icons for the stat cards. #}
+{% macro stat_icon(name) %}
+<svg class="stat-icon-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false"
+     fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  {% if name == "calendar" %}
+  <rect x="8" y="11" width="32" height="29" rx="5" fill="currentColor" fill-opacity="0.12"/>
+  <path d="M8 19.5h32M16.5 7.5v7M31.5 7.5v7"/>
+  <circle cx="17" cy="27" r="1.6" fill="currentColor"/><circle cx="24" cy="27" r="1.6" fill="currentColor"/>
+  <circle cx="31" cy="27" r="1.6" fill="currentColor"/><circle cx="17" cy="33.5" r="1.6" fill="currentColor"/>
+  {% elif name == "people" %}
+  <circle cx="18" cy="17" r="5.5" fill="currentColor" fill-opacity="0.12"/>
+  <path d="M8 38.5c0-6 4.5-10.2 10-10.2s10 4.2 10 10.2"/>
+  <circle cx="32" cy="19" r="4.5"/>
+  <path d="M29.5 29.2c.8-.3 1.6-.4 2.5-.4 4.9 0 8.5 3.7 8.5 9.4"/>
+  {% elif name == "door" %}
+  <path d="M10.5 41h27"/>
+  <path d="M15 41V8.5h18V41"/>
+  <path d="M15 8.5l10 4.2V41" fill="currentColor" fill-opacity="0.12"/>
+  <circle cx="22" cy="27" r="1.5" fill="currentColor"/>
+  {% else %}
+  <circle cx="24" cy="18.5" r="10" fill="currentColor" fill-opacity="0.12"/>
+  <path d="M19.5 18.6l3.1 3.1 6-6.2"/>
+  <path d="M18 26.8 15 40.5l9-4.5 9 4.5-3-13.7"/>
+  {% endif %}
+</svg>
+{% endmacro %}
+
+{% block title %}Organization dashboard · CommUNITY{% endblock %}
+
+{% block content %}
+{# Stats, computed from the event lists. Open spots never go below 0 for an event. #}
+{% set totals = namespace(signed_up=0, open_spots=0) %}
+{% for event in upcoming_events %}
+{% set totals.signed_up = totals.signed_up + (event.signups | length) %}
+{% set totals.open_spots = totals.open_spots + ([event.capacity - (event.signups | length), 0] | max) %}
+{% endfor %}
+
+<!-- Top bar for signed-in pages: small logo on the left, Log out on the right. -->
+<header class="topbar">
+  <a class="logo logo--small" href="/org/dashboard"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
+  <!-- TODO switch to url_for once the backend adds that route (/logout). -->
+  <a class="topbar-link" href="/logout">Log out</a>
+</header>
+
+<main class="dashboard org-dashboard">
+  {% if using_sample_data %}
+  <p class="sample-note">Showing sample data. The real data will come from the backend.</p>
+  {% endif %}
+
+  <h1 class="dashboard-title">Welcome, {{ org.name }}</h1>
+  <p class="dashboard-subtitle">Thank you for bringing your community together.</p>
+
+  <!-- At-a-glance numbers. -->
+  <ul class="stats" aria-label="Your events at a glance">
+    <li class="stat stat--sage">
+      <span class="stat-icon">{{ stat_icon("calendar") }}</span>
+      <span class="stat-number">{{ upcoming_events | length }}</span>
+      <span class="stat-label">Upcoming {{ "event" if upcoming_events | length == 1 else "events" }}</span>
+    </li>
+    <li class="stat stat--terracotta">
+      <span class="stat-icon">{{ stat_icon("people") }}</span>
+      <span class="stat-number">{{ totals.signed_up }}</span>
+      <span class="stat-label">{{ "Volunteer" if totals.signed_up == 1 else "Volunteers" }} signed up</span>
+    </li>
+    <li class="stat stat--tan">
+      <span class="stat-icon">{{ stat_icon("door") }}</span>
+      <span class="stat-number">{{ totals.open_spots }}</span>
+      <span class="stat-label">Open {{ "spot" if totals.open_spots == 1 else "spots" }}</span>
+    </li>
+    <li class="stat stat--cream">
+      <span class="stat-icon">{{ stat_icon("ribbon") }}</span>
+      <span class="stat-number">{{ past_events | length }}</span>
+      <span class="stat-label">{{ "Event" if past_events | length == 1 else "Events" }} completed</span>
+    </li>
+  </ul>
+
+  <!-- TODO switch to url_for once the backend adds POST handling for this route. -->
+  <div class="org-add">
+    <a class="button button-filled" href="/opportunities/create"><span aria-hidden="true">+ </span>Add an event</a>
+  </div>
+
+  <!-- Upcoming events, each a pinned note with the picture on the left. -->
+  <section class="events" aria-labelledby="upcoming-heading">
+    <h2 class="section-title" id="upcoming-heading">Upcoming events</h2>
+
+    {% for event in upcoming_events %}
+    {% set filled = event.signups | length %}
+    {% set spots_left = [event.capacity - filled, 0] | max %}
+    {% set filled_percent = ([filled / event.capacity * 100, 100] | min) | round | int if event.capacity > 0 else 0 %}
+    <article class="card card--wide card--note card--taped org-event">
+      <div class="org-event-main">
+        {{ event_tile(event) }}
+
+        <div class="event-body">
+          <div class="org-event-heading">
+            <h3 class="event-title">{{ event.title }}</h3>
+            {% if spots_left == 0 %}<span class="badge badge--full">Full</span>{% endif %}
+          </div>
+          <p class="event-meta">
+            <span>{{ fmt_date(event.date) }} - {{ fmt_time(event.start_time) }} to {{ fmt_time(event.end_time) }}</span>
+            <span>{{ event.location }}</span>
+          </p>
+          <p class="event-description">{{ event.description | truncate(120) }}</p>
+
+          <!-- How full the event is. -->
+          <div class="spots">
+            <p class="spots-text" id="spots-{{ event.id }}">{{ filled }} of {{ event.capacity }} spots filled</p>
+            <div class="spots-bar" role="progressbar" aria-labelledby="spots-{{ event.id }}"
+                 aria-valuenow="{{ filled }}" aria-valuemin="0" aria-valuemax="{{ event.capacity }}">
+              <div class="spots-fill" style="width: {{ filled_percent }}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Who signed up (native expand/collapse, no JavaScript). -->
+      <details class="disclosure">
+        <summary>Volunteers ({{ filled }})</summary>
+        <div class="disclosure-body">
+          {% if event.signups %}
+          <ul class="volunteer-list">
+            {% for volunteer in event.signups %}
+            <li>
+              <span class="volunteer-name">{{ volunteer.first_name }} {{ volunteer.last_name }}</span>
+              <span class="volunteer-username">@{{ volunteer.username }}</span>
+              <span class="volunteer-when">Signed up {{ fmt_signed_up(volunteer.signed_up_at) }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="disclosure-empty">No one has signed up yet. Share your event to spread the word!</p>
+          {% endif %}
+        </div>
+      </details>
+
+      <div class="org-event-actions">
+        <!-- TODO the backend teammate must add GET/POST /opportunities/<id>/edit (it renders create_opportunity.html with opportunity=...). -->
+        <a class="button button-small button-outline" href="/opportunities/{{ event.id }}/edit">Edit</a>
+
+        {% if filled > 0 %}
+        <!-- TODO the backend teammate must add GET /opportunities/<id>/volunteers.csv. -->
+        <a class="text-link" href="/opportunities/{{ event.id }}/volunteers.csv">Download volunteer list</a>
+        {% endif %}
+
+        <!-- Cancelling needs a second click to confirm. -->
+        <details class="disclosure disclosure--cancel">
+          <summary>Cancel event</summary>
+          <div class="disclosure-body confirm-box">
+            <p>Cancel this event? Volunteers who signed up will lose their spot.</p>
+            <!-- TODO the backend teammate must add POST /opportunities/<id>/delete. Until then this returns 404. -->
+            <form method="post" action="/opportunities/{{ event.id }}/delete">
+              <button type="submit" class="button button-small button-caution">Yes, cancel this event</button>
+            </form>
+          </div>
+        </details>
+      </div>
+    </article>
+    {% else %}
+    <div class="card card--wide card--note empty-state org-empty">
+      <svg class="doodle empty-doodle" aria-hidden="true" focusable="false"><use href="#doodle-sprout"></use></svg>
+      <p>You haven't posted any events yet.</p>
+      <a class="button button-filled" href="/opportunities/create"><span aria-hidden="true">+ </span>Add an event</a>
+    </div>
+    {% endfor %}
+  </section>
+
+  <!-- Past events: quieter cards, with a place to confirm who attended. -->
+  {% if past_events %}
+  <section class="events past-events" aria-labelledby="past-heading">
+    <h2 class="section-title" id="past-heading">Past events</h2>
+
+    {% for event in past_events %}
+    {% set attended_count = event.signups | length %}
+    <article class="card card--wide past-event">
+      <div class="past-event-row">
+        <div>
+          <h3 class="past-event-title">{{ event.title }}</h3>
+          <p class="past-event-meta">{{ fmt_date(event.date) }} · {{ attended_count }} {{ "volunteer" if attended_count == 1 else "volunteers" }}</p>
+        </div>
+        <span class="badge badge--done">Completed</span>
+      </div>
+
+      <details class="disclosure">
+        <summary>Confirm volunteer hours</summary>
+        <div class="disclosure-body">
+          {% if event.signups %}
+          <!-- TODO the backend teammate must add POST /opportunities/<id>/hours (credits hours to each checked volunteer). -->
+          <form class="attendance-form" method="post" action="/opportunities/{{ event.id }}/hours">
+            <fieldset class="field">
+              <legend>Who came to help?</legend>
+              {% for volunteer in event.signups %}
+              <div class="choice-option">
+                <input type="checkbox" name="attended" value="{{ volunteer.username }}" id="attended-{{ event.id }}-{{ loop.index }}">
+                <label for="attended-{{ event.id }}-{{ loop.index }}">{{ volunteer.first_name }} {{ volunteer.last_name }} <span class="volunteer-username">@{{ volunteer.username }}</span></label>
+              </div>
+              {% endfor %}
+            </fieldset>
+            <button type="submit" class="button button-small button-filled">Save attendance</button>
+          </form>
+          {% else %}
+          <p class="disclosure-empty">No volunteers signed up for this event.</p>
+          {% endif %}
+        </div>
+      </details>
+    </article>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <!-- A friendly tip. -->
+  <aside class="card card--wide tip-card" aria-label="Tip">
+    <svg class="doodle tip-doodle" aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
+    <p><strong>Tip:</strong> Events with a clear description and an exact start time fill up faster.</p>
+  </aside>
+</main>
+{% endblock %}

@@ -1,0 +1,2865 @@
+/* =========================================================
+   CommUNITY shared styles
+   A warm, handmade look: sand paper background, cream paper cards,
+   soft serif headings, and a few hand-drawn doodles.
+   ========================================================= */
+
+/* ---------- Colors and fonts: change them here and they update everywhere ---------- */
+:root {
+  --color-background: #E4CFAB;   /* warm sand/tan page background */
+  --color-text: #2B2118;         /* very dark brown: main text, "UNITY", focus ring */
+  --color-text-muted: #5A4A3A;   /* medium brown: secondary text like the tagline */
+  --color-accent: #3B2F25;       /* espresso brown: filled button background, outlined button border/text */
+  --color-accent-hover: #4D3E31; /* lighter espresso: filled button hover/press */
+  --color-accent-tint: #D9BF93;  /* darker tan: hover tints, soft borders, message boxes */
+  --color-white: #FFFFFF;        /* "Comm" in the logo, text on filled buttons */
+  --shadow-button: 0 8px 24px rgba(59, 47, 37, 0.25);  /* soft brown glow under the filled button */
+
+  /* Three warm accents, used sparingly (doodles, tape, the hours garden). Never used for body text. */
+  --color-sage: #6F8B62;         /* soft sage green: sprouts, tape, focus halo */
+  --color-terracotta: #C0694A;   /* warm terracotta: hearts, sun, glow behind the logo */
+  --color-cream: #FBF4E6;        /* creamy off-white: paper cards */
+
+  /* Logo depth. Each part gets two solid shadow steps plus a soft blur, for a subtle raised look.
+     --title-depth is the size of one step: 1px = subtle, 1.5px = stronger, 0.5px = softer. */
+  --title-depth: 1px;
+  --title-shadow-color: #5A4A3A;       /* solid steps under "UNITY" */
+  --title-shadow-color-comm: #8A7358;  /* solid steps under the white "Comm" (lighter, so it stays soft) */
+  --title-shadow-soft: rgba(43, 33, 24, 0.35); /* blurred shadow under both parts */
+
+  /* "UNITY" boldness. --unity-stroke is the outline thickness (only the outer half shows, since the
+     fill is painted on top). --unity-depth-extra pushes its shadow out further to clear the stroke. */
+  --unity-stroke: 3px;
+  --unity-depth-extra: 1px;
+
+  /* Forms and cards. */
+  --color-card: var(--color-cream); /* paper card background */
+  --color-input-border: #8A7358;    /* brown borders on inputs and radio rows */
+
+  /* Paper-card shape: soft layered shadow and slightly uneven "hand-cut" corners. */
+  --shadow-card: 0 1px 2px rgba(59, 47, 37, 0.08), 0 6px 14px rgba(59, 47, 37, 0.08), 0 18px 36px rgba(59, 47, 37, 0.10);
+  --shadow-card-lifted: 0 2px 4px rgba(59, 47, 37, 0.10), 0 10px 22px rgba(59, 47, 37, 0.12), 0 26px 48px rgba(59, 47, 37, 0.14);
+  --radius-card: 22px 18px 24px 16px / 16px 24px 18px 22px;
+  --radius-input: 14px;
+
+  /* Fonts: Nunito for body text, Fraunces for headings, Lobster and Kaushan Script for the logo
+     (all loaded in base.html). */
+  --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-logo-comm: "Lobster", cursive;
+  --font-logo-unity: "Kaushan Script", cursive;
+
+  /* Event picture tiles: one warm background per category (mixed from the palette above),
+     shown behind the event photo, or on their own with an icon when there's no photo. */
+  --tile-library: color-mix(in srgb, var(--color-terracotta) 22%, var(--color-cream));
+  --tile-food: color-mix(in srgb, var(--color-accent-tint) 80%, var(--color-cream));
+  --tile-animals: color-mix(in srgb, var(--color-text-muted) 18%, var(--color-cream));
+  --tile-environment: color-mix(in srgb, var(--color-sage) 30%, var(--color-cream));
+  --tile-education: color-mix(in srgb, var(--color-sage) 16%, var(--color-accent-tint));
+  --tile-other: color-mix(in srgb, var(--color-terracotta) 10%, var(--color-accent-tint));
+  --tile-icon: var(--color-accent); /* icon color on every tile */
+  --tile-size: 80px;                /* picture size on phones; 112px from 640px wide (see below) */
+
+  /* ---- Dials: turn decoration and motion up or down from here ---- */
+  --doodles: block;          /* "none" hides every doodle on every page */
+  --doodle-opacity: 0.9;     /* 0-1, how strong the doodles look */
+  --tilt: 1;                 /* multiplier for the hand-placed tilt of doodles and notes (0 = straight) */
+  --grain-opacity: 0.55;     /* 0-1, strength of the paper grain on the background */
+  --rise-distance: 14px;     /* how far content rises as the page loads (0px = fade only) */
+  --rise-duration: 600ms;    /* how long that fade-and-rise takes */
+  --float-distance: 6px;     /* how far the floating doodles drift */
+  --float-duration: 5s;      /* how slowly they drift (bigger = calmer) */
+}
+
+/* ---------- Base ---------- */
+
+/* Anything with the hidden attribute stays hidden, even if a class gives it a display value. */
+[hidden] {
+  display: none !important;
+}
+
+/* Hidden on screen but still read by screen readers (e.g. a label for a search box). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Count padding and borders inside an element's width, so sizes are easier to reason about. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Tan on both html and body so it covers the whole viewport, including the overscroll area. */
+html,
+body {
+  margin: 0;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+body {
+  /* Smoother, thinner text rendering on macOS. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+
+  /* Warm light: a creamy glow from the top left and a faint terracotta warmth at the bottom right. */
+  background-image:
+    radial-gradient(ellipse 80% 55% at 12% 0%, color-mix(in srgb, var(--color-cream) 55%, transparent), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 92% 100%, color-mix(in srgb, var(--color-terracotta) 12%, transparent), transparent 70%);
+
+  /* Lets the paper grain below sit above this background but under all the content. */
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+}
+
+/* Paper grain: a tiny tiled noise pattern drawn by an inline SVG filter (CSS only, no image file).
+   It covers the whole page height, so long pages stay textured all the way down. */
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.23 0 0 0 0 0.18 0 0 0 0 0.14 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Headings use the soft serif. (By class, not by tag, so the logo's <h1> on the landing page is untouched.) */
+.card-title,
+.dashboard-title,
+.section-title,
+.event-title {
+  font-family: var(--font-heading);
+  font-variation-settings: "SOFT" 100; /* Fraunces' softest, roundest letter shapes */
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* ---------- Doodles (shared) ---------- */
+
+/* Every decorative doodle. They never take clicks, and the --doodles dial can hide them all. */
+.doodle {
+  display: var(--doodles);
+  flex-shrink: 0;
+  opacity: var(--doodle-opacity);
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ---------- Landing page ---------- */
+
+.hero {
+  /* Fill the screen. 100vh is a fallback for older browsers; 100dvh adjusts for mobile toolbars. */
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  /* Stack the logo, tagline, and buttons, centered both ways. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  position: relative; /* the corner doodles are placed inside this */
+  overflow: hidden;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+/* Corner doodles sit in the empty space around the content. */
+.hero-doodle {
+  position: absolute;
+  width: clamp(2.75rem, 2rem + 3vw, 4.75rem);
+  height: clamp(2.75rem, 2rem + 3vw, 4.75rem);
+}
+
+.hero-doodle--sun {
+  top: clamp(1rem, 5vh, 3.5rem);
+  left: clamp(1rem, 7vw, 9rem);
+  color: var(--color-terracotta);
+  rotate: calc(var(--tilt) * -8deg);
+  animation: float var(--float-duration) ease-in-out infinite alternate;
+}
+
+.hero-doodle--house {
+  bottom: clamp(1rem, 6vh, 4rem);
+  left: clamp(1.25rem, 11vw, 13rem);
+  color: var(--color-text-muted);
+  rotate: calc(var(--tilt) * -4deg);
+}
+
+.hero-doodle--sprout {
+  bottom: clamp(1rem, 5vh, 3.5rem);
+  right: clamp(1rem, 8vw, 10rem);
+  color: var(--color-sage);
+  rotate: calc(var(--tilt) * 6deg);
+}
+
+/* On short screens (phones turned sideways) there's no empty space, so the corner doodles step aside. */
+@media (max-height: 600px) {
+  .hero-doodle {
+    display: none;
+  }
+}
+
+/* Wraps the logo: adds a soft warm glow behind it and room above it for two small doodles. */
+.hero-title-wrap {
+  position: relative;
+  isolation: isolate;
+  padding-top: clamp(2.25rem, 1.5rem + 3vw, 4rem);
+}
+
+.hero-title-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -25% -18%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-terracotta) 24%, transparent), transparent);
+}
+
+/* The two small doodles live in the wrapper's top padding, so they never touch the logo. */
+.title-doodle {
+  position: absolute;
+  top: 0;
+  width: clamp(1.1rem, 0.8rem + 1.2vw, 1.75rem);
+  height: clamp(1.1rem, 0.8rem + 1.2vw, 1.75rem);
+}
+
+.title-doodle--left {
+  left: 0.25rem;
+  color: var(--color-sage);
+  rotate: calc(var(--tilt) * -10deg);
+}
+
+.title-doodle--right {
+  right: 0.25rem;
+  color: var(--color-terracotta);
+  rotate: calc(var(--tilt) * 12deg);
+  animation: float var(--float-duration) ease-in-out 1.2s infinite alternate;
+}
+
+/* ---------- Logo: "Comm" in Lobster (white) + "UNITY" in Kaushan Script (dark brown) ---------- */
+
+.logo {
+  margin: 0;
+  /* About 3.5rem on phones, growing to 7rem on wide screens. */
+  font-size: clamp(3.5rem, 2rem + 6vw, 7rem);
+  font-weight: 400; /* script fonts only come in one weight; this stops the browser faking bold */
+  line-height: 1.1;
+  white-space: nowrap; /* never split "CommUNITY" across two lines */
+}
+
+.logo__comm {
+  font-family: var(--font-logo-comm);
+  color: var(--color-white);
+  /* Two solid steps (1x and 2x depth) and a soft blur (3x right, 4x down). */
+  text-shadow:
+    var(--title-depth) var(--title-depth) 0 var(--title-shadow-color-comm),
+    calc(var(--title-depth) * 2) calc(var(--title-depth) * 2) 0 var(--title-shadow-color-comm),
+    calc(var(--title-depth) * 3) calc(var(--title-depth) * 4) 8px var(--title-shadow-soft);
+}
+
+.logo__unity {
+  font-family: var(--font-logo-unity);
+  text-transform: uppercase;
+  color: var(--color-text);
+  font-weight: 400;
+  letter-spacing: 0.03em; /* keeps the thicker strokes from merging between letters */
+
+  /* Outline in the text color makes the brush strokes bolder; paint-order draws it under the fill. */
+  -webkit-text-stroke: var(--unity-stroke) var(--color-text);
+  paint-order: stroke fill;
+
+  /* Same layered shadow as "Comm" in medium brown, each offset 1px further out to clear the stroke. */
+  text-shadow:
+    calc(var(--title-depth) + var(--unity-depth-extra)) calc(var(--title-depth) + var(--unity-depth-extra)) 0 var(--title-shadow-color),
+    calc(var(--title-depth) * 2 + var(--unity-depth-extra)) calc(var(--title-depth) * 2 + var(--unity-depth-extra)) 0 var(--title-shadow-color),
+    calc(var(--title-depth) * 3 + var(--unity-depth-extra)) calc(var(--title-depth) * 4 + var(--unity-depth-extra)) 8px var(--title-shadow-soft);
+}
+
+.hero-tagline {
+  /* The gap above (after the logo) is smaller than the gap below (before the buttons). */
+  margin: 1.5rem 0 2.5rem;
+  max-width: 32ch;
+  /* About 1.15rem on phones, growing to 1.5rem on wide screens. */
+  font-size: clamp(1.15rem, 1rem + 0.6vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  text-wrap: balance; /* when it wraps, keep the lines about the same length */
+}
+
+/* The Sign up / Log in buttons sit side by side and wrap onto two lines on very narrow screens. */
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* ---------- Buttons ---------- */
+
+/* Shared look for any link styled as a pill-shaped button. Add button-outline or button-filled.
+   Buttons lift a little on hover and press down softly when clicked, like a real button. */
+.button {
+  display: inline-block;
+  padding: 0.9rem 2.5rem;
+  border: 2px solid var(--color-accent);
+  border-radius: 9999px; /* fully rounded pill */
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, translate 200ms ease, box-shadow 200ms ease;
+}
+
+.button:hover {
+  translate: 0 -2px;
+}
+
+.button:active {
+  translate: 0 1px;
+  transition-duration: 60ms;
+}
+
+/* Keyboard focus ring. The offset leaves a gap so the ring stands out from the button. */
+.button:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 4px;
+}
+
+/* Outlined button (Sign up): a cream paper button with an espresso border, darker tan on hover/press. */
+.button-outline {
+  background-color: var(--color-cream);
+  color: var(--color-accent);
+  box-shadow: 0 3px 0 var(--color-accent-tint), 0 8px 18px rgba(59, 47, 37, 0.12);
+}
+
+.button-outline:hover {
+  background-color: var(--color-accent-tint);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--color-accent-tint) 70%, var(--color-accent)), 0 12px 24px rgba(59, 47, 37, 0.16);
+}
+
+.button-outline:active {
+  background-color: var(--color-accent-tint);
+  box-shadow: 0 1px 0 var(--color-accent-tint), 0 4px 10px rgba(59, 47, 37, 0.12);
+}
+
+/* Filled button (Log in): solid espresso with a soft shadow, lighter espresso on hover/press. */
+.button-filled {
+  background-color: var(--color-accent);
+  color: var(--color-white);
+  box-shadow: var(--shadow-button);
+}
+
+.button-filled:hover,
+.button-filled:active {
+  background-color: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.button-filled:hover {
+  box-shadow: 0 12px 28px rgba(59, 47, 37, 0.3);
+}
+
+.button-filled:active {
+  box-shadow: 0 4px 10px rgba(59, 47, 37, 0.25);
+}
+
+/* A full-width button, e.g. a form's submit button. Works on <button> as well as <a>. */
+.button-block {
+  display: block;
+  width: 100%;
+  font-family: inherit;
+}
+
+/* ---------- Sign up and log in pages ---------- */
+
+.auth-page {
+  /* Same full-screen centering as the landing page. The 1rem side padding is the phone margin. */
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.75rem;
+  padding: 2rem 1rem;
+}
+
+/* Small version of the landing page logo, used as a link home.
+   The depth variables are scaled down too, so the shadow and stroke suit the smaller size. */
+.logo--small {
+  font-size: 2.5rem;
+  text-decoration: none;
+  --title-depth: 0.5px;
+  --unity-stroke: 1.5px;
+  --unity-depth-extra: 0.5px;
+}
+
+.logo--small:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* ---------- Cards: cream paper notes ---------- */
+
+.card {
+  position: relative; /* corner doodles and tape are placed inside this */
+  width: 100%;
+  max-width: 440px;
+  padding: 2rem 1.5rem;
+  border: 1.5px solid var(--color-accent-tint);
+  border-radius: var(--radius-card);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* A note feel: a faint ruled-paper line near the top edge. */
+.card--note {
+  background-image: linear-gradient(to bottom, transparent 0.85rem, color-mix(in srgb, var(--color-accent-tint) 45%, transparent) 0.85rem, transparent calc(0.85rem + 1px));
+}
+
+/* A strip of washi tape across the top edge, like a note taped to a board. */
+.card--taped::before {
+  content: "";
+  position: absolute;
+  top: -0.7rem;
+  left: 50%;
+  width: 5.5rem;
+  height: 1.4rem;
+  translate: -50% 0;
+  rotate: calc(var(--tilt) * -3deg);
+  border-radius: 3px;
+  background-color: color-mix(in srgb, var(--color-sage) 45%, transparent);
+  box-shadow: 0 1px 2px rgba(59, 47, 37, 0.12);
+  pointer-events: none;
+}
+
+/* A doodle tucked over the card's top-right corner, outside the text area. */
+.card-doodle {
+  position: absolute;
+  top: -1.4rem;
+  right: -0.9rem;
+  width: 3.25rem;
+  height: 3.25rem;
+  rotate: calc(var(--tilt) * 10deg);
+}
+
+.card-doodle--sprout {
+  color: var(--color-sage);
+}
+
+.card-doodle--heart {
+  color: var(--color-terracotta);
+}
+
+/* The sun sits a little higher than the other corner doodles, clear of the card heading. */
+.card-doodle--sun {
+  top: -1.75rem;
+  color: var(--color-terracotta);
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+/* Keep the hours heading clear of the sun on narrow screens. */
+.hours-card .section-title {
+  padding-right: 2.5rem;
+}
+
+.card-title {
+  margin: 0.25rem 0 1.5rem;
+  font-size: 1.75rem;
+  text-align: center;
+}
+
+/* ---------- Forms ---------- */
+
+/* Space between fields. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* A fieldset is used as a field too, so reset its default border and padding. */
+.field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+/* Labels and legends sit above their inputs. */
+.field > label,
+.field > legend {
+  display: block;
+  margin-bottom: 0.4rem;
+  padding: 0;
+  font-weight: 700;
+}
+
+/* Soft, inviting inputs: warm white, rounded, with a gentle inner shadow like a pressed paper slot. */
+.field input[type="text"],
+.field input[type="password"],
+.field input[type="url"],
+.field input[type="date"],
+.field input[type="time"],
+.field input[type="number"],
+.field input[type="search"],
+.field textarea,
+.field select {
+  display: block;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1.5px solid var(--color-input-border);
+  border-radius: var(--radius-input);
+  background-color: color-mix(in srgb, var(--color-cream) 35%, var(--color-white));
+  box-shadow: inset 0 2px 3px rgba(59, 47, 37, 0.06);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1rem; /* 16px or more stops phones from zooming in on focus */
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+/* Descriptions can grow taller, but not sideways. */
+.field textarea {
+  min-height: 8rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* Dropdowns get a hand-drawn-style chevron instead of the browser's default arrow. */
+.field select {
+  appearance: none;
+  padding-right: 2.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233B2F25' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* Focus: a dark ring for clarity, plus a soft sage halo around it. */
+.field textarea:focus-visible,
+.field select:focus-visible,
+.field input:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-sage) 30%, transparent);
+}
+
+/* Two fields side by side (e.g. first and last name). Stacked in one column on phones,
+   with the same spacing as the other fields. */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+/* min-width: 0 lets each column shrink, so the inputs never push past the card. */
+.form-row > * {
+  min-width: 0;
+}
+
+@media (min-width: 480px) {
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Message box from the backend (Flask flash()), shown above a form, e.g. "Invalid username or password." */
+.form-message {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--color-accent);
+  border-radius: var(--radius-input);
+  background-color: var(--color-accent-tint);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.form-message p {
+  margin: 0;
+}
+
+.form-message p + p {
+  margin-top: 0.4rem;
+}
+
+/* Small helper text under an input. */
+.field-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* Inline error under a field or group (hidden until main.js shows it). A terracotta bar on the
+   left marks it as an error; the text itself stays dark brown so it's easy to read. */
+.field-error {
+  margin: -0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 4px solid var(--color-terracotta);
+  border-radius: 6px;
+  background-color: color-mix(in srgb, var(--color-terracotta) 12%, var(--color-cream));
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* One radio button (or checkbox) and its label in a bordered row.
+   The label fills the row, so it's an easy tap target. */
+.choice-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-left: 0.85rem;
+  border: 1.5px solid var(--color-input-border);
+  border-radius: var(--radius-input);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.choice-option:hover {
+  background-color: color-mix(in srgb, var(--color-accent-tint) 30%, transparent);
+}
+
+/* The selected row gets a darker border and a soft sage-and-tan tint. */
+.choice-option:has(input:checked) {
+  border-color: var(--color-accent);
+  background-color: color-mix(in srgb, var(--color-sage) 18%, var(--color-cream));
+}
+
+.choice-option input {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--color-accent); /* brown radio dot / checkmark */
+  cursor: pointer;
+}
+
+.choice-option label {
+  flex: 1;
+  padding: 0.75rem 0.75rem 0.75rem 0;
+  cursor: pointer;
+}
+
+/* "Already have an account? Log in" under the form. */
+.auth-switch {
+  margin: 1.5rem 0 0;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.auth-switch a {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* ---------- Dashboard (signed-in home page) ---------- */
+
+/* Top bar: small logo on the left, Log out on the right, lined up with the content column. */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+}
+
+.topbar .logo--small {
+  font-size: 2rem;
+}
+
+.topbar-link {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.topbar-link:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* One centered column, about 720px wide, with the 1rem phone margin. */
+.dashboard {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 3rem;
+}
+
+/* Shown only while the template falls back to its sample data. */
+.sample-note {
+  margin: 0 0 1.5rem;
+  padding: 0.6rem 0.9rem;
+  border: 1.5px dashed var(--color-input-border);
+  border-radius: var(--radius-input);
+  background-color: color-mix(in srgb, var(--color-cream) 50%, transparent);
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.5rem);
+}
+
+.dashboard-subtitle {
+  margin: 0.4rem 0 2.75rem; /* extra room for the sun doodle on the hours card below */
+  font-size: 1.15rem;
+  color: var(--color-text-muted);
+}
+
+/* A card that fills the content column instead of stopping at the form card's 440px. */
+.card--wide {
+  max-width: none;
+  margin-bottom: 1.25rem;
+}
+
+.section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.35rem;
+}
+
+/* ---------- Hours card: a little garden that grows with each hour ---------- */
+
+.hours-count {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.hours-count strong {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-variation-settings: "SOFT" 100;
+}
+
+/* The garden row: 10 plots. Sprouted plots show a sage seedling, the rest show a seed in the soil. */
+.garden {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr)); /* plots spread evenly across the card */
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.25rem 0.25rem;
+  border-radius: var(--radius-input);
+  background-color: color-mix(in srgb, var(--color-accent-tint) 35%, transparent);
+}
+
+.garden-plant {
+  width: 100%;
+  max-width: 2.75rem;
+  aspect-ratio: 1;
+  color: var(--color-input-border);
+  opacity: 0.6;
+}
+
+.garden-plant--grown {
+  color: var(--color-sage);
+  opacity: 1;
+}
+
+/* Every other seedling leans a little, so the row looks hand-planted. */
+.garden-plant--grown:nth-child(even) {
+  rotate: calc(var(--tilt) * 4deg);
+}
+
+.garden-plant--grown:nth-child(odd) {
+  rotate: calc(var(--tilt) * -3deg);
+}
+
+.hours-note {
+  margin: 0.75rem 0 0;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* Warm words of thanks under the garden. */
+.hours-cheer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0;
+  font-size: 1.05rem;
+}
+
+.cheer-heart {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--color-terracotta);
+}
+
+/* When the goal is reached, the card gets a sage border and the thanks stand out. */
+.hours-card--goal {
+  border-color: var(--color-sage);
+}
+
+.hours-card--goal .hours-cheer {
+  font-weight: 700;
+}
+
+/* ---------- Upcoming events: notes pinned to a bulletin board ---------- */
+
+.events {
+  margin-top: 2.25rem;
+}
+
+.events .section-title {
+  margin-bottom: 1.25rem;
+}
+
+/* Notes hang slightly crooked, alternating left and right, and straighten up on hover. */
+.event-card {
+  margin-bottom: 1.75rem;
+  rotate: calc(var(--tilt) * -0.6deg);
+  transition: rotate 250ms ease, translate 250ms ease, box-shadow 250ms ease;
+}
+
+.event-card:nth-of-type(even) {
+  rotate: calc(var(--tilt) * 0.5deg);
+}
+
+/* Alternate the tape color: sage, then terracotta. */
+.event-card:nth-of-type(even)::before {
+  background-color: color-mix(in srgb, var(--color-terracotta) 40%, transparent);
+  rotate: calc(var(--tilt) * 4deg);
+}
+
+.event-card:hover {
+  rotate: 0deg;
+  translate: 0 -3px;
+  box-shadow: var(--shadow-card-lifted);
+}
+
+/* Picture on the left, text on the right, at every screen size. */
+.event-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/* The picture tile: a little photo pinned to the note, with a soft border and a slight tilt. */
+.event-tile {
+  position: relative;
+  flex: 0 0 var(--tile-size);
+  width: var(--tile-size);
+  height: var(--tile-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.25rem;
+  border: 1.5px solid var(--color-accent-tint);
+  border-radius: 16px 12px 18px 12px / 12px 18px 12px 16px;
+  overflow: hidden;
+  --tile-bg: var(--tile-other); /* set per category below; also used to hide a broken image */
+  background-color: var(--tile-bg);
+  color: var(--tile-icon);
+  rotate: calc(var(--tilt) * -2deg);
+}
+
+/* A subtle inner shadow over the picture, so it looks set into the note. */
+.event-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 2px 6px rgba(59, 47, 37, 0.18);
+  pointer-events: none;
+}
+
+.event-card:nth-of-type(even) .event-tile {
+  rotate: calc(var(--tilt) * 2deg);
+}
+
+.event-tile--library     { --tile-bg: var(--tile-library); }
+.event-tile--food        { --tile-bg: var(--tile-food); }
+.event-tile--animals     { --tile-bg: var(--tile-animals); }
+.event-tile--environment { --tile-bg: var(--tile-environment); }
+.event-tile--education   { --tile-bg: var(--tile-education); }
+
+/* The fallback icon, centered in the tile. */
+.event-tile-icon {
+  width: 58%;
+  height: 58%;
+}
+
+/* The real photo covers the icon. If it's missing or fails to load, the icon shows through. */
+.event-tile-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  color: transparent; /* hides alt text styling if the image fails */
+}
+
+/* Browsers only draw pseudo-elements on an image that failed to load. This one paints the tile's
+   own color over the browser's broken-image icon (top-left corner) and its thin frame, while the
+   middle stays see-through, so the category icon behind shows instead. Loaded photos never get it. */
+.event-tile-img::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--tile-bg);
+  background: linear-gradient(var(--tile-bg), var(--tile-bg)) 0 0 / 24px 24px no-repeat;
+}
+
+/* The text column takes the rest of the width and wraps instead of overflowing. */
+.event-body {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Bigger pictures and roomier cards from 640px wide. */
+@media (min-width: 640px) {
+  :root {
+    --tile-size: 112px;
+  }
+
+  .event-card {
+    gap: 1.5rem;
+  }
+}
+
+/* On phones, slightly slimmer side padding gives the text column more room next to the picture. */
+@media (max-width: 479px) {
+  .event-card {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+}
+
+.event-title {
+  margin: 0.25rem 0 0.4rem;
+  font-size: 1.25rem;
+}
+
+/* Date and location on one line, wrapping onto two on narrow phones. */
+.event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0 0 0.6rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.event-description {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.empty-doodle {
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.5rem;
+  color: var(--color-sage);
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.dashboard-actions {
+  margin-top: 1.75rem;
+  text-align: center;
+}
+
+/* ---------- Organization pages ---------- */
+
+/* The create/edit event form has more fields, so its card is a little wider. */
+.card--form-wide {
+  max-width: 560px;
+}
+
+/* At-a-glance stats: four small cards, two per row on phones, four across on wider screens. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 1rem;
+  border: 1.5px solid var(--color-accent-tint);
+  border-radius: var(--radius-card);
+  background-color: var(--color-cream);
+  box-shadow: var(--shadow-card);
+}
+
+/* A soft colored circle behind each stat icon. */
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: 0.35rem;
+  border-radius: 50%;
+  color: var(--color-accent);
+}
+
+.stat--sage .stat-icon       { background-color: color-mix(in srgb, var(--color-sage) 30%, var(--color-cream)); }
+.stat--terracotta .stat-icon { background-color: color-mix(in srgb, var(--color-terracotta) 24%, var(--color-cream)); }
+.stat--tan .stat-icon        { background-color: var(--color-accent-tint); }
+.stat--cream .stat-icon      { background-color: color-mix(in srgb, var(--color-sage) 14%, var(--color-accent-tint)); }
+
+.stat-icon-svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.stat-number {
+  font-family: var(--font-heading);
+  font-variation-settings: "SOFT" 100;
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-weight: 700;
+  color: var(--color-text-muted);
+  line-height: 1.3;
+}
+
+/* The big "+ Add an event" button. */
+.org-add {
+  margin: 0 0 0.5rem;
+}
+
+/* Organization event cards: taped notes kept straight (they hold buttons and forms). */
+.org-event {
+  margin-bottom: 1.75rem;
+}
+
+/* Picture on the left, details on the right, at every screen size. */
+.org-event-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .org-event-main {
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .org-event,
+  .past-event {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+}
+
+/* Title with an optional "Full" badge next to it. */
+.org-event-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.badge--full {
+  background-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.badge--done {
+  border: 1.5px solid var(--color-sage);
+  background-color: color-mix(in srgb, var(--color-sage) 18%, var(--color-cream));
+  color: var(--color-text);
+}
+
+/* "7 of 10 spots filled" with a small bar: tan track, espresso fill. */
+.spots {
+  margin-top: 0.85rem;
+}
+
+.spots-text {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.spots-bar {
+  height: 0.6rem;
+  max-width: 18rem;
+  border-radius: 9999px;
+  background-color: var(--color-accent-tint);
+  overflow: hidden;
+}
+
+.spots-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background-color: var(--color-accent);
+}
+
+/* ---------- Expandable sections (<details>/<summary>) ---------- */
+
+.disclosure {
+  margin-top: 1rem;
+  border-top: 1.5px dashed var(--color-accent-tint);
+  padding-top: 0.75rem;
+}
+
+/* The clickable row, with a chevron that turns when it opens. */
+.disclosure > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.25rem 0.75rem 0.25rem 0.5rem;
+  border-radius: 10px;
+  font-weight: 700;
+  color: var(--color-accent);
+  cursor: pointer;
+  list-style: none;
+  transition: background-color 150ms ease;
+}
+
+/* Hide the browser's default triangle; the chevron below replaces it. */
+.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure > summary::before {
+  content: "";
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2.5px solid currentColor;
+  border-bottom: 2.5px solid currentColor;
+  rotate: -45deg;
+  transition: rotate 200ms ease;
+}
+
+.disclosure[open] > summary::before {
+  rotate: 45deg;
+}
+
+.disclosure > summary:hover {
+  background-color: color-mix(in srgb, var(--color-accent-tint) 35%, transparent);
+}
+
+.disclosure > summary:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.disclosure-body {
+  padding: 0.5rem 0.5rem 0.25rem;
+}
+
+.disclosure-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* The list of signed-up volunteers. */
+.volunteer-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.volunteer-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.6rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-accent-tint) 60%, transparent);
+}
+
+.volunteer-list li:last-child {
+  border-bottom: 0;
+}
+
+.volunteer-name {
+  font-weight: 700;
+}
+
+.volunteer-username {
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.volunteer-when {
+  margin-left: auto;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Event actions: Edit, Download, Cancel ---------- */
+
+.org-event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.75rem;
+}
+
+/* A smaller pill for actions inside cards (still at least 44px tall to tap). */
+.button-small {
+  min-height: 44px;
+  padding: 0.5rem 1.4rem;
+  font-size: 1rem;
+}
+
+/* A plain underlined link for secondary actions. */
+.text-link {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.text-link:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* "Cancel event" is cautious but calm: a terracotta-outlined summary, no alarming red. */
+.disclosure--cancel {
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+}
+
+.disclosure--cancel > summary {
+  border: 1.5px solid color-mix(in srgb, var(--color-terracotta) 70%, var(--color-accent));
+  border-radius: 9999px;
+  padding: 0.25rem 1rem 0.25rem 0.85rem;
+  color: var(--color-text);
+}
+
+.disclosure--cancel > summary:hover {
+  background-color: color-mix(in srgb, var(--color-terracotta) 12%, var(--color-cream));
+}
+
+/* When open, the confirmation takes its own full-width row under the other actions. */
+.disclosure--cancel[open] {
+  flex-basis: 100%;
+}
+
+.confirm-box {
+  margin-top: 0.6rem;
+  padding: 0.85rem 1rem;
+  border: 1.5px solid color-mix(in srgb, var(--color-terracotta) 45%, var(--color-accent-tint));
+  border-radius: var(--radius-input);
+  background-color: color-mix(in srgb, var(--color-terracotta) 10%, var(--color-cream));
+}
+
+.confirm-box p {
+  margin: 0 0 0.75rem;
+}
+
+.confirm-box form {
+  margin: 0;
+}
+
+/* The confirm button: espresso text on a soft terracotta tint, with a stronger border. */
+.button-caution {
+  border-color: color-mix(in srgb, var(--color-terracotta) 70%, var(--color-accent));
+  background-color: color-mix(in srgb, var(--color-terracotta) 22%, var(--color-cream));
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+.button-caution:hover,
+.button-caution:active {
+  background-color: color-mix(in srgb, var(--color-terracotta) 34%, var(--color-cream));
+}
+
+/* ---------- Past events: quieter, compact cards ---------- */
+
+.past-events {
+  margin-top: 2.5rem;
+}
+
+.past-event {
+  padding: 1.25rem 1.5rem;
+  border-style: dashed;
+  background-color: color-mix(in srgb, var(--color-cream) 70%, var(--color-accent-tint));
+  box-shadow: none;
+}
+
+.past-event-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.past-event-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-variation-settings: "SOFT" 100;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.past-event-meta {
+  margin: 0.2rem 0 0;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.attendance-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.attendance-form .field {
+  width: 100%;
+}
+
+/* ---------- Tip card and empty state ---------- */
+
+.org-empty .button {
+  margin-top: 1.25rem;
+}
+
+.tip-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 2rem;
+  padding: 1.1rem 1.25rem;
+  border-style: dashed;
+  border-color: var(--color-sage);
+  box-shadow: none;
+}
+
+.tip-card p {
+  margin: 0;
+}
+
+.tip-doodle {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--color-sage);
+  rotate: calc(var(--tilt) * -8deg);
+}
+
+/* ---------- Onboarding questionnaire ---------- */
+
+.onboarding-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 640px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+.onboarding-intro,
+.onboarding-progress,
+.onboarding-form {
+  width: 100%;
+}
+
+.onboarding-intro {
+  text-align: center;
+}
+
+.onboarding-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-variation-settings: "SOFT" 100;
+  font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.onboarding-subtitle {
+  margin: 0.4rem 0 0;
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+}
+
+/* "Step 3 of 7" and a bar that fills as you go. */
+.onboarding-progress-text {
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.progress-track {
+  height: 0.75rem;
+  border-radius: 9999px;
+  background-color: var(--color-accent-tint);
+  overflow: hidden;
+}
+
+.progress-track-fill {
+  width: 0;
+  height: 100%;
+  border-radius: 9999px;
+  background-color: var(--color-accent);
+  transition: width 300ms ease;
+}
+
+/* Without JavaScript the question cards simply stack on one page. */
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* With JavaScript (main.js adds .is-stepped) only the current question shows. */
+.is-stepped .onboarding-step:not(.is-active) {
+  display: none;
+}
+
+.onboarding-step {
+  max-width: none;
+  padding: 2.25rem 1.5rem 1.75rem; /* a little extra on top keeps the question clear of the corner doodle */
+}
+
+/* The big, friendly question at the top of each card (a label or a legend). */
+.field > .step-question {
+  display: block;
+  margin: 0 0 0.4rem;
+  padding: 0 2.5rem 0 0; /* room for the corner doodle */
+  font-family: var(--font-heading);
+  font-variation-settings: "SOFT" 100;
+  font-size: clamp(1.5rem, 1.2rem + 1.3vw, 2rem);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* Focus lands on the question when a new step opens; a soft dashed ring shows where you are. */
+.step-question:focus {
+  outline: none;
+}
+
+.step-question:focus-visible {
+  outline: 2px dashed var(--color-input-border);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+.step-subtitle {
+  margin: 0 0 1.25rem;
+  color: var(--color-text-muted);
+}
+
+/* Short answers don't need the full card width. */
+.onboarding-step input[type="number"],
+.onboarding-step #zip_code {
+  max-width: 14rem;
+}
+
+.onboarding-step .field-error {
+  margin: 0.85rem 0 0;
+}
+
+/* The corner doodle for each question. */
+.step-doodle {
+  color: var(--color-terracotta);
+}
+
+.step-doodle--sage {
+  color: var(--color-sage);
+}
+
+/* Radio answers as pill cards that wrap into columns when there's room. */
+.pill-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr));
+  gap: 0.6rem;
+}
+
+.choice-option--pill {
+  margin-top: 0;
+  border-radius: 9999px;
+  padding-left: 1rem;
+}
+
+.deadline-field {
+  margin-top: 1.25rem;
+}
+
+/* ---------- Chip picker (skills and interests) ---------- */
+
+.chip-hint {
+  margin: 0.4rem 0 0.9rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* Suggestion bubbles wrap onto as many lines as they need. */
+.chip-cloud,
+.chip-picks,
+.chip-fallback {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 1rem;
+  border: 1.5px solid var(--color-input-border);
+  border-radius: 9999px;
+  background-color: var(--color-cream);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.chip:hover {
+  background-color: color-mix(in srgb, var(--color-accent-tint) 45%, var(--color-cream));
+}
+
+.chip:focus-visible,
+.chip-remove:focus-visible,
+.chip-check:has(input:focus-visible) {
+  outline: 3px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+/* Selected suggestions turn espresso with a check mark. */
+.chip[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.chip-check-icon {
+  display: none;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chip[aria-pressed="true"] .chip-check-icon {
+  display: block;
+}
+
+/* Long custom picks shrink with "..." instead of breaking the layout. */
+.chip-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "Your picks (N)": soft sage chips with a remove button. */
+.chip-picks-title {
+  margin: 1.25rem 0 0.5rem;
+  font-weight: 700;
+}
+
+.chip-picks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip--picked {
+  padding-block: 0;
+  padding-right: 0.15rem;
+  border-color: var(--color-sage);
+  background-color: color-mix(in srgb, var(--color-sage) 22%, var(--color-cream));
+  cursor: default;
+}
+
+.chip--picked:hover {
+  background-color: color-mix(in srgb, var(--color-sage) 22%, var(--color-cream));
+}
+
+.chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chip-remove:hover {
+  background-color: color-mix(in srgb, var(--color-sage) 30%, transparent);
+}
+
+/* Without JavaScript: the same bubbles, as checkboxes. */
+.chip-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.45rem 1rem;
+  border: 1.5px solid var(--color-input-border);
+  border-radius: 9999px;
+  background-color: var(--color-cream);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip-check:has(input:checked) {
+  border-color: var(--color-accent);
+  background-color: color-mix(in srgb, var(--color-sage) 22%, var(--color-cream));
+}
+
+.chip-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+/* ---------- Back / Next ---------- */
+
+.step-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.step-next {
+  margin-left: auto;
+}
+
+/* On the last step, the submit button shares the row with Back. */
+.is-stepped .step-nav [data-step-submit] {
+  flex: 1;
+  width: auto;
+  min-width: 12rem;
+}
+
+/* Each new question fades in and slides a little: from the right going forward, from the left going back. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    translate: 18px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes step-in-back {
+  from {
+    opacity: 0;
+    translate: -18px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.is-stepped .onboarding-step.is-active {
+  animation: step-in 350ms ease-out;
+}
+
+.is-stepped[data-direction="back"] .onboarding-step.is-active {
+  animation-name: step-in-back;
+}
+
+.onboarding-page > * {
+  animation: rise var(--rise-duration) ease-out both;
+}
+
+.onboarding-page > :nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.onboarding-page > :nth-child(n + 3) {
+  animation-delay: 160ms;
+}
+
+/* ---------- Opportunities: results picked for the volunteer ---------- */
+
+/* A slightly wider column than the dashboard, with the top bar lined up to match. */
+.topbar--wide {
+  max-width: 840px;
+}
+
+.topbar-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 1.25rem;
+}
+
+/* Taller links so they're easy to tap. */
+.topbar-nav .topbar-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* On narrow phones the logo shrinks a little so both links stay on one line. */
+@media (max-width: 419px) {
+  .topbar--wide .logo--small {
+    font-size: 1.7rem;
+  }
+
+  .topbar-nav {
+    flex-wrap: nowrap;
+    gap: 0 0.85rem;
+  }
+}
+
+.results-page {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 3rem;
+}
+
+/* Small decorative line icons (search, pencil, calendar...). */
+.ui-icon {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.results-intro {
+  position: relative;
+}
+
+/* Room on the right for the sparkle doodle. */
+.results-intro .dashboard-title {
+  padding-right: 2.75rem;
+}
+
+.results-subtitle {
+  max-width: 46ch;
+  margin-bottom: 1.5rem;
+}
+
+.results-doodle {
+  position: absolute;
+  top: -0.25rem;
+  right: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--color-terracotta);
+  rotate: calc(var(--tilt) * 12deg);
+  animation: float var(--float-duration) ease-in-out infinite alternate;
+}
+
+/* The form sits above the results, so an open answer panel is never covered by a card. */
+.search-form {
+  position: relative;
+  z-index: 2;
+}
+
+/* ---- Search bar: one big rounded pill holding the icon, the input, the clear "x", and Search ---- */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.35rem 0.35rem 1.1rem;
+  border: 1.5px solid var(--color-input-border);
+  border-radius: 9999px;
+  background-color: color-mix(in srgb, var(--color-cream) 55%, var(--color-white));
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 150ms ease;
+}
+
+/* The whole pill shows the focus ring while the input is focused. */
+.search-bar:focus-within {
+  outline: 3px solid var(--color-text);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-card), 0 0 0 7px color-mix(in srgb, var(--color-sage) 30%, transparent);
+}
+
+.search-bar .ui-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  color: var(--color-text-muted);
+}
+
+.search-bar input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 0.4rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1.1rem;
+  outline: none; /* the pill around it shows focus instead */
+}
+
+.search-bar input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+/* With JavaScript, our own "x" replaces the browser's. */
+.has-js .search-bar input::-webkit-search-cancel-button {
+  display: none;
+  appearance: none;
+}
+
+.search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.search-clear:hover {
+  background-color: color-mix(in srgb, var(--color-accent-tint) 45%, transparent);
+}
+
+.search-clear:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 0;
+}
+
+.search-submit {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0.55rem 1.5rem;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+@media (max-width: 419px) {
+  .search-bar {
+    padding-left: 0.85rem;
+  }
+
+  .search-submit {
+    padding-inline: 1rem;
+  }
+}
+
+/* ---- Answer bubbles: little sticky-note tags that open a small editor ---- */
+.answers {
+  margin-top: 1.25rem;
+}
+
+.answers-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* The panels are placed against this row, so they always fit inside the page width. */
+.answer-row {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.answer-pop {
+  max-width: 100%;
+}
+
+.answer-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.85rem 0.45rem 1rem;
+  border: 1.5px solid color-mix(in srgb, var(--color-input-border) 55%, transparent);
+  border-radius: 14px 18px 14px 18px / 18px 14px 18px 14px;
+  background-color: color-mix(in srgb, var(--color-sage) 22%, var(--color-cream));
+  box-shadow: 0 2px 0 rgba(59, 47, 37, 0.12), 0 4px 10px rgba(59, 47, 37, 0.08);
+  color: var(--color-text);
+  line-height: 1.3;
+  cursor: pointer;
+  list-style: none; /* hides the default triangle */
+  rotate: calc(var(--tilt) * -1deg);
+  transition: background-color 150ms ease, border-color 150ms ease, rotate 200ms ease, translate 200ms ease;
+}
+
+.answer-bubble::-webkit-details-marker {
+  display: none;
+}
+
+/* Each tag is a different paper color and leans its own way. */
+.answer-pop:nth-of-type(3n + 2) > .answer-bubble {
+  background-color: color-mix(in srgb, var(--color-terracotta) 16%, var(--color-cream));
+  rotate: calc(var(--tilt) * 1deg);
+}
+
+.answer-pop:nth-of-type(3n) > .answer-bubble {
+  background-color: color-mix(in srgb, var(--color-accent-tint) 70%, var(--color-cream));
+  rotate: calc(var(--tilt) * -0.5deg);
+}
+
+.answer-bubble:hover {
+  rotate: 0deg;
+  translate: 0 -1px;
+  border-color: var(--color-accent);
+}
+
+.answer-bubble:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.answer-label {
+  font-weight: 700;
+}
+
+.answer-value {
+  min-width: 0;
+  max-width: 15rem;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.answer-bubble .ui-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.15rem;
+}
+
+/* Open: the tag turns espresso and straightens, so it's clear which answer is being edited. */
+.answer-pop[open] > .answer-bubble {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+  color: var(--color-white);
+  rotate: 0deg;
+}
+
+/* The editor: a cream card under the bubbles. It keeps its place in the row vertically, while
+   left and width keep it inside the row (main.js lines it up under its own bubble). */
+.answer-panel {
+  position: absolute;
+  left: 0;
+  z-index: 20;
+  width: min(100%, 24rem);
+  margin-top: 0.6rem;
+  padding: 1.25rem;
+  border: 1.5px solid var(--color-accent-tint);
+  border-radius: var(--radius-card);
+  background-color: var(--color-cream);
+  box-shadow: var(--shadow-card-lifted);
+  animation: panel-in 180ms ease-out;
+}
+
+.answer-panel--wide {
+  width: min(100%, 36rem);
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+
+.answer-panel .pill-options {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+}
+
+.answer-panel input[type="number"] {
+  max-width: 10rem;
+}
+
+/* Long suggestion lists scroll inside the panel instead of making it very tall. */
+.answer-panel .chip-cloud {
+  max-height: 13rem;
+  overflow-y: auto;
+  padding: 4px; /* room for the focus ring */
+}
+
+.answer-panel .chip-picks-title {
+  margin-top: 0.85rem;
+}
+
+.answer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 1.1rem;
+}
+
+.answer-actions .button {
+  font-family: inherit;
+}
+
+/* A button that looks like a quiet text link (e.g. Cancel). */
+.text-button {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-accent);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  background-color: color-mix(in srgb, var(--color-accent-tint) 40%, transparent);
+}
+
+.text-button:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.answers-retake {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.35rem;
+}
+
+.remember-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  margin-top: 0.4rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.remember-check input {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.remember-check input:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+/* ---- Count and sort: side by side, the sort drops under the count on phones ---- */
+.results-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1.5px dashed var(--color-accent-tint);
+}
+
+.results-count {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.results-count strong {
+  font-family: var(--font-heading);
+  font-variation-settings: "SOFT" 100;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.sort-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.sort-field > label {
+  margin: 0;
+}
+
+.sort-field select {
+  width: auto;
+  min-width: 11.5rem;
+}
+
+@media (max-width: 479px) {
+  .results-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sort-field select {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ---- Result cards: a picture on the left, details on the right ---- */
+.results {
+  margin-top: 1.75rem;
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cards fade and rise in, one after another (off for people who prefer less motion). */
+.result-item {
+  animation: rise var(--rise-duration) ease-out both;
+  animation-delay: calc(var(--i, 0) * 70ms + 200ms);
+}
+
+.result-card {
+  margin: 0;
+  padding: 1.5rem;
+  transition: translate 250ms ease, box-shadow 250ms ease;
+}
+
+.result-card:hover {
+  translate: 0 -3px;
+  box-shadow: var(--shadow-card-lifted);
+}
+
+.result-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.result-item:nth-child(even) .event-tile {
+  rotate: calc(var(--tilt) * 2deg);
+}
+
+@media (min-width: 640px) {
+  .result-main {
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .result-card {
+    padding: 1.25rem 1.1rem;
+  }
+}
+
+/* Title on the left, match badge in the top-right corner (it wraps under the title when there's no room). */
+.result-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+}
+
+.result-title {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0.25rem 0 0;
+}
+
+.result-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.result-title a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-terracotta);
+  text-underline-offset: 3px;
+}
+
+.result-title a:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* "92% match": always written out; the stronger the match, the deeper the sage.
+   Weaker matches get a soft terracotta instead (never red/green alone). */
+.match-badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.2rem 0.75rem;
+  border: 1.5px solid var(--color-sage);
+  border-radius: 9999px;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.match-badge svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-terracotta);
+}
+
+.match-badge--high {
+  background-color: color-mix(in srgb, var(--color-sage) 45%, var(--color-cream));
+}
+
+.match-badge--mid {
+  background-color: color-mix(in srgb, var(--color-sage) 18%, var(--color-cream));
+}
+
+.match-badge--low {
+  border-color: color-mix(in srgb, var(--color-terracotta) 60%, var(--color-cream));
+  background-color: color-mix(in srgb, var(--color-terracotta) 12%, var(--color-cream));
+}
+
+.result-org {
+  margin: 0.15rem 0 0.6rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.result-facts {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result-facts li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.result-facts .ui-icon {
+  margin-top: 0.2rem;
+  color: var(--color-text-muted);
+}
+
+/* "Only 2 spots left": a gentle terracotta nudge, not an alarm. */
+.badge--few {
+  border: 1.5px solid color-mix(in srgb, var(--color-terracotta) 60%, var(--color-cream));
+  background-color: color-mix(in srgb, var(--color-terracotta) 16%, var(--color-cream));
+  color: var(--color-text);
+}
+
+.reasons {
+  margin-top: 0.9rem;
+}
+
+.reasons-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.reasons-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reason-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--color-sage) 55%, var(--color-cream));
+  border-radius: 9999px;
+  background-color: color-mix(in srgb, var(--color-sage) 15%, var(--color-cream));
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.reason-chip svg {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  color: var(--color-sage);
+}
+
+.result-details {
+  margin-top: 1rem;
+  font-family: inherit;
+}
+
+/* The first card in "Best match" order: a sage border and an espresso ribbon. */
+.result-card--top {
+  border-color: var(--color-sage);
+}
+
+.top-pick {
+  position: absolute;
+  top: -0.85rem;
+  left: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.15rem 0.85rem;
+  border-radius: 9999px;
+  background-color: var(--color-accent);
+  box-shadow: 0 3px 8px rgba(59, 47, 37, 0.2);
+  color: var(--color-cream);
+  font-size: 0.9rem;
+  font-weight: 700;
+  rotate: calc(var(--tilt) * -2deg);
+}
+
+.top-pick-icon {
+  width: 1rem;
+  height: 1rem;
+  color: color-mix(in srgb, var(--color-terracotta) 55%, var(--color-cream));
+}
+
+/* ---- No results ---- */
+.results-empty-title {
+  margin-bottom: 0.35rem !important;
+  font-family: var(--font-heading);
+  font-variation-settings: "SOFT" 100;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.results-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* Page pieces rise in one after another, like the dashboard. */
+.results-page > * {
+  animation: rise var(--rise-duration) ease-out both;
+}
+
+.results-page > :nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.results-page > :nth-child(n + 3) {
+  animation-delay: 160ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-card:hover,
+  .answer-bubble:hover {
+    translate: none;
+  }
+}
+
+/* ---------- Opportunity detail page ---------- */
+
+.detail-page {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 3rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  margin-bottom: 0.5rem;
+}
+
+.detail-message {
+  margin-top: 0.5rem;
+}
+
+/* Header card: a big picture on the left, text on the right, and the add button underneath. */
+.detail-card {
+  margin-top: 0.75rem;
+  padding-top: 2rem;
+}
+
+.detail-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/* Larger than the picture on the results cards, but still on the left on phones. */
+.detail-card .event-tile {
+  --tile-size: 88px;
+}
+
+@media (min-width: 640px) {
+  .detail-main {
+    gap: 1.75rem;
+  }
+
+  .detail-card .event-tile {
+    --tile-size: 168px;
+  }
+}
+
+.detail-head {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-title {
+  margin: 0.25rem 0 0.35rem;
+  font-size: clamp(1.5rem, 1.2rem + 1.6vw, 2.25rem);
+}
+
+.detail-org {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.detail-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1.5px dashed var(--color-accent-tint);
+}
+
+.add-form {
+  margin: 0;
+}
+
+/* The big pill for the add button. */
+.button-large {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 56px;
+  padding: 0.9rem 2.25rem;
+  font-family: inherit;
+  font-size: 1.2rem;
+}
+
+.button-large .ui-icon {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+/* Disabled states: calm and readable, with no lift on hover and no pointer cursor. */
+.button:disabled,
+.button:disabled:hover,
+.button:disabled:active {
+  translate: none;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* "On your list": sage, with a check mark. */
+.button-done {
+  border-color: var(--color-sage);
+  background-color: color-mix(in srgb, var(--color-sage) 28%, var(--color-cream));
+  color: var(--color-text);
+}
+
+/* "This event is full": quiet tan. */
+.button-unavailable {
+  border-color: var(--color-input-border);
+  background-color: color-mix(in srgb, var(--color-accent-tint) 60%, var(--color-cream));
+  color: var(--color-text);
+}
+
+.detail-view-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* The blurb is bigger, friendlier text; the full description opens underneath. */
+.detail-about {
+  max-width: none;
+  padding-bottom: 1.25rem;
+}
+
+.detail-blurb {
+  margin: 0;
+  font-size: clamp(1.15rem, 1.05rem + 0.5vw, 1.35rem);
+  line-height: 1.6;
+}
+
+.detail-full {
+  padding-top: 0.75rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+/* A single line break in the description stays a line break. */
+.detail-full p {
+  margin: 0 0 1rem;
+  white-space: pre-line;
+}
+
+.detail-full p:last-child {
+  margin-bottom: 0;
+}
+
+/* Facts: small cards, one per column on phones and two across from 560px. */
+.facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 560px) {
+  .facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1.5px solid var(--color-accent-tint);
+  border-radius: var(--radius-card);
+  background-color: var(--color-cream);
+  box-shadow: var(--shadow-card);
+}
+
+.fact > div {
+  min-width: 0;
+}
+
+/* A soft sage circle behind each icon (terracotta when spots are running low). */
+.fact-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background-color: color-mix(in srgb, var(--color-sage) 28%, var(--color-cream));
+  color: var(--color-accent);
+}
+
+.fact-icon .ui-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.fact--few {
+  border-color: color-mix(in srgb, var(--color-terracotta) 55%, var(--color-accent-tint));
+}
+
+.fact--few .fact-icon {
+  background-color: color-mix(in srgb, var(--color-terracotta) 24%, var(--color-cream));
+}
+
+.fact-label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.fact-value {
+  margin: 0.1rem 0 0;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.fact-note {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.detail-reasons {
+  margin: 0 0 1.5rem;
+}
+
+.detail-reasons .reason-chip {
+  padding: 0.35rem 0.9rem;
+  font-size: 1rem;
+}
+
+.detail-reasons .reason-chip svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.detail-org-card {
+  margin-bottom: 0;
+}
+
+.detail-org-about {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Page pieces rise in one after another, like the other pages. */
+.detail-page > * {
+  animation: rise var(--rise-duration) ease-out both;
+}
+
+.detail-page > :nth-child(n + 3) {
+  animation-delay: 90ms;
+}
+
+.detail-page > :nth-child(n + 5) {
+  animation-delay: 160ms;
+}
+
+/* The phone bar is hidden on bigger screens. */
+.sticky-add {
+  display: none;
+}
+
+/* On phones the add button also sits in a bar at the bottom of the screen. The page gets extra
+   room at the bottom, so the bar never covers the last card. */
+@media (max-width: 639px) {
+  .detail-page {
+    padding-bottom: 7.5rem;
+  }
+
+  .sticky-add {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0 1.25rem;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    border-top: 1.5px solid var(--color-accent-tint);
+    background-color: var(--color-cream);
+    box-shadow: 0 -6px 18px rgba(59, 47, 37, 0.14);
+  }
+
+  .sticky-add .add-form {
+    flex: 1 1 14rem;
+  }
+
+  .sticky-add .button-large {
+    width: 100%;
+  }
+
+  .sticky-add > .button-large {
+    flex: 1 1 14rem;
+    width: auto;
+  }
+}
+
+/* ---------- Gentle motion ---------- */
+
+/* Page content fades in and rises a little as the page loads, one piece after another. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 var(--rise-distance);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* A slow drift for one or two doodles per page. */
+@keyframes float {
+  to {
+    translate: 0 calc(var(--float-distance) * -1);
+  }
+}
+
+.hero > :not(.doodle),
+.auth-page > *,
+.topbar,
+.dashboard > * {
+  animation: rise var(--rise-duration) ease-out both;
+}
+
+.hero > :nth-child(5),
+.auth-page > :nth-child(2),
+.dashboard > :nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.hero > :nth-child(6),
+.dashboard > :nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.dashboard > :nth-child(4) {
+  animation-delay: 240ms;
+}
+
+.dashboard > :nth-child(n + 5) {
+  animation-delay: 300ms;
+}
+
+/* The sun on the hours card drifts slowly too. */
+.card-doodle--sun {
+  animation: float var(--float-duration) ease-in-out infinite alternate;
+}
+
+/* People who ask their system for less motion get none: no load animation, no floating, no hover slides. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Event notes and buttons stay put on hover instead of jumping. */
+  .event-card:hover,
+  .button:hover,
+  .button:active {
+    translate: none;
+  }
+}
+
+/* ---------- Organization: create-event card and location picker ---------- */
+.org-create {
+  margin-bottom: 0;
+}
+
+.org-create .button {
+  font-family: inherit;
+}
+
+.location-title {
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+}
+
+#address-search {
+  margin: 0.75rem 0;
+}
+
+gmp-place-autocomplete {
+  width: 100%;
+  color-scheme: light; /* keeps Google's address box light, like the rest of the page */
+}
+
+#map {
+  width: 100%;
+  height: 350px;
+  margin: 0.75rem 0;
+  border: 1.5px solid var(--color-input-border);
+  border-radius: var(--radius-input);
+}
+
+.org-skills {
+  margin-top: 0.75rem;
+}

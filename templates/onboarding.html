@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{# Default suggestions and the chip picker are shared with the opportunities page (see _macros.html).
+   The backend may pass skill_options and interest_options (lists of strings) to replace these,
+   and answers (a dict of saved answers) to prefill the form when someone comes back to edit. #}
+{% from "_macros.html" import chip_picker, default_skill_options, default_interest_options %}
+{% set skill_options = skill_options if skill_options is defined else default_skill_options %}
+{% set interest_options = interest_options if interest_options is defined else default_interest_options %}
+
+{# Previously saved answers (empty when someone is filling this in for the first time). #}
+{% set saved = answers if answers is defined and answers else {} %}
+
+
+{# One small original doodle per question, tucked in the card's corner. #}
+{% macro question_icon(name) %}
+<svg class="doodle card-doodle step-doodle" viewBox="0 0 48 48" aria-hidden="true" focusable="false"
+     fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  {% if name == "cake" %}
+  <path d="M9 40.5h30M11.5 40.5V27.8c0-1.8 1.4-3.3 3.3-3.3h18.4c1.8 0 3.3 1.5 3.3 3.3v12.7" fill="currentColor" fill-opacity="0.15"/>
+  <path d="M11.5 32c2.1 1.8 4.1 1.8 6.2 0 2.1 1.8 4.1 1.8 6.2 0 2.1 1.8 4.1 1.8 6.2 0 2.1 1.8 4.1 1.8 6.2 0"/>
+  <path d="M24 24.5v-6"/>
+  <path d="M24 9.2c1.9 2 2.6 3.9 2 5.4-.4 1-1.2 1.6-2 1.6s-1.6-.6-2-1.6c-.6-1.5.1-3.4 2-5.4z" fill="currentColor"/>
+  {% elif name == "pencil" %}
+  <path d="M30.5 9.5l8 8L18 38l-9.5 1.5L10 30z" fill="currentColor" fill-opacity="0.15"/>
+  <path d="M26.5 13.5l8 8M10 30l8 8"/>
+  {% elif name == "clock" %}
+  <circle cx="24" cy="25" r="15" fill="currentColor" fill-opacity="0.15"/>
+  <path d="M24 16.5V25l5.5 3.5M17 6.5h14"/>
+  {% elif name == "calendar" %}
+  <rect x="8" y="11" width="32" height="29" rx="5" fill="currentColor" fill-opacity="0.15"/>
+  <path d="M8 19.5h32M16.5 7.5v7M31.5 7.5v7"/>
+  <path d="M18.5 29.5l3.8 3.8 7.5-7.6"/>
+  {% else %}
+  <path d="M24 42.5s-12.5-11.3-12.5-21A12.5 12.5 0 0 1 36.5 21.5c0 9.7-12.5 21-12.5 21z" fill="currentColor" fill-opacity="0.15"/>
+  <circle cx="24" cy="21.5" r="4.5"/>
+  {% endif %}
+</svg>
+{% endmacro %}
+
+{% block title %}Getting to know you · CommUNITY{% endblock %}
+
+{% block content %}
+<main class="onboarding-page">
+  <a class="logo logo--small" href="/"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
+
+  <div class="onboarding-intro">
+    <h1 class="onboarding-title">Let's find your perfect fit</h1>
+    <p class="onboarding-subtitle">A few quick questions so we can suggest opportunities near you.</p>
+  </div>
+
+  <!-- Step progress. Hidden without JavaScript, when every question shows on one page. -->
+  <div class="onboarding-progress" data-progress hidden>
+    <p class="onboarding-progress-text" id="progress-text">Step <span data-step-number>1</span> of <span data-step-total>7</span></p>
+    <div class="progress-track" role="progressbar" aria-labelledby="progress-text"
+         aria-valuenow="1" aria-valuemin="1" aria-valuemax="7">
+      <div class="progress-track-fill" data-progress-fill></div>
+    </div>
+  </div>
+
+  <!-- TODO switch to url_for once the backend adds POST handling for this route. The backend
+       validates and saves the answers; nothing here pretends to save them. -->
+  <form id="onboarding-form" class="onboarding-form" method="post" action="/onboarding">
+
+    <!-- 1. Age -->
+    <section class="card card--note onboarding-step" data-step>
+      {{ question_icon("cake") }}
+      <div class="field">
+        <label class="step-question" for="age" tabindex="-1">How old are you?</label>
+        <p class="step-subtitle" id="age-subtitle">This helps us show opportunities that fit your age.</p>
+        <input type="number" name="age" id="age" min="5" max="120" required inputmode="numeric"
+               aria-describedby="age-subtitle" data-error-message="Please enter your age, from 5 to 120."
+               value="{{ saved.get('age') or '' }}">
+        <p class="field-error" data-step-error hidden></p>
+      </div>
+    </section>
+
+    <!-- 2. School level -->
+    <section class="card card--note onboarding-step" data-step>
+      {{ question_icon("pencil") }}
+      <fieldset class="field">
+        <legend class="step-question" tabindex="-1">What's your school level?</legend>
+        <p class="step-subtitle">Pick the one that fits you best right now.</p>
+        <div class="pill-options">
+          {% for value, label in [("elementary", "Elementary"), ("middle", "Middle school"), ("high", "High school"), ("college", "College or university"), ("none", "Not in school")] %}
+          <div class="choice-option choice-option--pill">
+            <input type="radio" name="school_level" value="{{ value }}" id="school-{{ value }}" required
+                   data-error-message="Please choose your school level."{% if saved.get('school_level') == value %} checked{% endif %}>
+            <label for="school-{{ value }}">{{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+        <p class="field-error" data-step-error hidden></p>
+      </fieldset>
+    </section>
+
+    <!-- 3. Skills (optional) -->
+    <section class="card card--note onboarding-step" data-step>
+      <svg class="doodle card-doodle step-doodle step-doodle--sage" aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
+      <fieldset class="field">
+        <legend class="step-question" tabindex="-1">What are you good at?</legend>
+        <p class="step-subtitle">Pick any that fit, or add your own. You can skip this one.</p>
+        {{ chip_picker("skills", "skills", skill_options, saved.get("skills"), false) }}
+        <p class="field-error" data-step-error hidden></p>
+      </fieldset>
+    </section>
+
+    <!-- 4. Interests (at least one) -->
+    <section class="card card--note onboarding-step" data-step>
+      <svg class="doodle card-doodle step-doodle step-doodle--terracotta" aria-hidden="true" focusable="false"><use href="#doodle-heart"></use></svg>
+      <fieldset class="field">
+        <legend class="step-question" tabindex="-1">What do you care about?</legend>
+        <p class="step-subtitle">Pick at least one cause you'd love to help with.</p>
+        {{ chip_picker("interests", "interests", interest_options, saved.get("interests"), true) }}
+        <p class="field-error" data-step-error hidden></p>
+      </fieldset>
+    </section>
+
+    <!-- 5. Hours per week -->
+    <section class="card card--note onboarding-step" data-step>
+      {{ question_icon("clock") }}
+      <div class="field">
+        <label class="step-question" for="hours_per_week" tabindex="-1">How many volunteer hours do you need each week?</label>
+        <p class="step-subtitle" id="hours-hint">Not sure? An estimate is fine.</p>
+        <input type="number" name="hours_per_week" id="hours_per_week" min="0.5" max="40" step="0.5" required
+               inputmode="decimal" aria-describedby="hours-hint"
+               data-error-message="Please enter between 0.5 and 40 hours, in half-hour steps."
+               value="{{ saved.get('hours_per_week') or '' }}">
+        <p class="field-error" data-step-error hidden></p>
+      </div>
+    </section>
+
+    <!-- 6. Time period -->
+    <section class="card card--note onboarding-step" data-step>
+      {{ question_icon("calendar") }}
+      <fieldset class="field">
+        <legend class="step-question" tabindex="-1">How long do you have to finish?</legend>
+        <p class="step-subtitle">We'll look for opportunities that fit your timeline.</p>
+        <div class="pill-options">
+          {% for value, label in [("2_weeks", "2 weeks"), ("1_month", "1 month"), ("3_months", "3 months"), ("6_months", "6 months"), ("custom", "A specific date")] %}
+          <div class="choice-option choice-option--pill">
+            <input type="radio" name="time_period" value="{{ value }}" id="period-{{ value }}" required
+                   data-error-message="Please choose how long you have."{% if saved.get('time_period') == value %} checked{% endif %}>
+            <label for="period-{{ value }}">{{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+
+        {# Without JavaScript this always shows. With JavaScript it only shows (and is required)
+           when "A specific date" is picked. #}
+        <div class="field deadline-field" data-deadline>
+          <label for="deadline">Your date</label>
+          <input type="date" name="deadline" id="deadline" data-error-message="Please pick the date you need to finish by."
+                 value="{{ saved.get('deadline') or '' }}">
+        </div>
+        <p class="field-error" data-step-error hidden></p>
+      </fieldset>
+    </section>
+
+    <!-- 7. ZIP code -->
+    <section class="card card--note onboarding-step" data-step>
+      {{ question_icon("pin") }}
+      <div class="field">
+        <label class="step-question" for="zip_code" tabindex="-1">Where are you located?</label>
+        <p class="step-subtitle" id="zip-hint">We only use your ZIP code to find opportunities near you. We never show it to other people.</p>
+        <input type="text" name="zip_code" id="zip_code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5"
+               autocomplete="postal-code" required aria-describedby="zip-hint"
+               data-error-message="Please enter a 5-digit ZIP code." value="{{ saved.get('zip_code') or '' }}">
+        <p class="field-error" data-step-error hidden></p>
+      </div>
+    </section>
+
+    <!-- Back / Next appear with JavaScript; without it, only the submit button shows. -->
+    <div class="step-nav">
+      <button type="button" class="button button-small button-outline" data-step-back hidden>Back</button>
+      <button type="button" class="button button-filled step-next" data-step-next hidden>Next</button>
+      <button type="submit" class="button button-filled button-block" data-step-submit>Find my opportunities</button>
+    </div>
+  </form>
+</main>
+
+<!-- base.html doesn't load main.js, so this page loads it itself (step-by-step flow and chip pickers). -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

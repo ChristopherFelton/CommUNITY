@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{# Create or edit an event. The backend passes `opportunity` when editing; then the heading,
+   button, and form action change and every field is prefilled. Otherwise the form is blank. #}
+{% set editing = opportunity is defined %}
+
+{% block title %}{{ "Edit your event" if editing else "Add an event" }} · CommUNITY{% endblock %}
+
+{% block content %}
+<!-- Same layout as the sign-up page: small logo linking to the organization dashboard, then a card. -->
+<!-- TODO switch to url_for once the backend adds these routes (form actions and the dashboard link). -->
+<main class="auth-page">
+  <a class="logo logo--small" href="/org/dashboard"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
+
+  <div class="card card--note card--taped card--form-wide">
+    <svg class="doodle card-doodle card-doodle--sun" aria-hidden="true" focusable="false"><use href="#doodle-sun"></use></svg>
+    <h1 class="card-title">{{ "Edit your event" if editing else "Add an event" }}</h1>
+
+    <!-- Errors from the backend, sent with flash(). Shows nothing until the backend sends one. -->
+    {% with messages = get_flashed_messages() %}{% if messages %}<div class="form-message" role="alert">{% for m in messages %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+
+    <!-- The backend validates and saves this form (POST). Until it does, submitting returns
+         "405 Method Not Allowed" (create) or "404 Not Found" (edit). Browser checks here are only for usability. -->
+    <form id="event-form" class="form" method="post"
+          action="{{ '/opportunities/' ~ opportunity.id ~ '/edit' if editing else '/opportunities/create' }}">
+      <div class="field">
+        <label for="title">Event title</label>
+        <input type="text" name="title" id="title" required maxlength="100"
+               value="{{ (opportunity.title or '') if editing }}">
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea name="description" id="description" rows="5" required maxlength="1000"
+                  aria-describedby="description-count">{{ (opportunity.description or '') if editing }}</textarea>
+        <!-- Updated as you type by main.js. -->
+        <p class="field-hint" id="description-count" data-char-count-for="description">{{ ((opportunity.description or '') | length) if editing else 0 }} / 1000 characters</p>
+      </div>
+
+      <div class="field">
+        <label for="location">Location</label>
+        <input type="text" name="location" id="location" required autocomplete="street-address"
+               aria-describedby="location-hint" value="{{ (opportunity.location or '') if editing }}">
+        <p class="field-hint" id="location-hint">Full address so volunteers can find you.</p>
+      </div>
+
+      <div class="field">
+        <label for="date">Date</label>
+        {# Date inputs need YYYY-MM-DD. Real dates are formatted here; strings are used as is. #}
+        <input type="date" name="date" id="date" required
+               value="{% if editing and opportunity.date %}{{ opportunity.date if opportunity.date is string else opportunity.date.strftime('%Y-%m-%d') }}{% endif %}">
+      </div>
+
+      <!-- Start and end time sit side by side on wider screens and stack on phones. -->
+      <div class="form-row">
+        <div class="field">
+          <label for="start_time">Start time</label>
+          <input type="time" name="start_time" id="start_time" required
+                 value="{% if editing and opportunity.start_time %}{{ opportunity.start_time if opportunity.start_time is string else opportunity.start_time.strftime('%H:%M') }}{% endif %}">
+        </div>
+
+        <div class="field">
+          <label for="end_time">End time</label>
+          <input type="time" name="end_time" id="end_time" required aria-describedby="time-error"
+                 value="{% if editing and opportunity.end_time %}{{ opportunity.end_time if opportunity.end_time is string else opportunity.end_time.strftime('%H:%M') }}{% endif %}">
+        </div>
+      </div>
+      <!-- Shown by main.js if the end time isn't after the start time. -->
+      <p class="field-error" id="time-error" role="alert" hidden>The end time needs to be after the start time.</p>
+
+      <div class="field">
+        <label for="capacity">Number of volunteers needed</label>
+        <input type="number" name="capacity" id="capacity" required min="1" step="1" inputmode="numeric"
+               value="{{ (opportunity.capacity or '') if editing }}">
+      </div>
+
+      <div class="field">
+        <label for="category">Category</label>
+        {% set current_category = ((opportunity.category or '') | string | lower) if editing else '' %}
+        <select name="category" id="category" required>
+          <option value="" disabled {{ "selected" if current_category not in ["library", "food", "animals", "environment", "education", "other"] }}>Choose a category</option>
+          {% for value, label in [("library", "Library"), ("food", "Food"), ("animals", "Animals"), ("environment", "Environment"), ("education", "Education"), ("other", "Other")] %}
+          <option value="{{ value }}" {{ "selected" if current_category == value }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="image_url">Picture or logo link (optional)</label>
+        <input type="url" name="image_url" id="image_url" aria-describedby="image-hint"
+               value="{{ (opportunity.image_url or '') if editing }}">
+        <p class="field-hint" id="image-hint">Link to your logo or an activity photo you have permission to use.</p>
+      </div>
+
+      <div class="field">
+        <label for="tags">Skills or interests wanted (optional)</label>
+        {# tags may come back as a list or as one comma-separated string. #}
+        <input type="text" name="tags" id="tags" aria-describedby="tags-hint"
+               value="{% if editing and opportunity.tags %}{{ opportunity.tags if opportunity.tags is string else opportunity.tags | join(', ') }}{% endif %}">
+        <p class="field-hint" id="tags-hint">Separate with commas, for example reading, tutoring, kids.</p>
+      </div>
+
+      <div class="field">
+        <label for="hours">Volunteer hours credited (optional)</label>
+        <input type="number" name="hours" id="hours" min="0" step="0.5" inputmode="decimal"
+               value="{{ (opportunity.hours if opportunity.hours is not none else '') if editing }}">
+      </div>
+
+      <button type="submit" class="button button-filled button-block">{{ "Save changes" if editing else "Post event" }}</button>
+    </form>
+
+    <p class="auth-switch"><a href="/org/dashboard">Cancel</a></p>
+  </div>
+</main>
+
+<!-- base.html doesn't load main.js, so this page loads it itself (character counter and time check). -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

@@ -1,22 +1,36 @@
+{% extends "base.html" %}
 
-<h1>Log In</h1>
+{% block title %}Log in · CommUNITY{% endblock %}
 
-<form action="{{ url_for('login') }}" method="POST">
-    <label for="username">Username</label>
-    <input
-        type="text"
-        id="username"
-        name="username"
-        required
-    >
+{% block content %}
+<!-- Log in page: small logo linking home, then a card with the log-in form. Same layout as signup.html. -->
+<main class="auth-page">
+  <a class="logo logo--small" href="{{ url_for('home') }}"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
 
-    <label for="password">Password</label>
-    <input
-        type="password"
-        id="password"
-        name="password"
-        required
-    >
+  <!-- A paper note taped to the page, with a little heart doodle in the corner. -->
+  <div class="card card--note card--taped">
+    <svg class="doodle card-doodle card-doodle--heart" aria-hidden="true" focusable="false"><use href="#doodle-heart"></use></svg>
+    <h1 class="card-title">Welcome back</h1>
 
-    <button type="submit">Log In</button>
-</form>
+    <!-- Messages from the backend, sent with flash() (e.g. "Invalid username or password.").
+         Shows nothing until the backend sends one. -->
+    {% with messages = get_flashed_messages() %}{% if messages %}<div class="form-message" role="alert">{% for m in messages %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+
+    <form class="form" method="post" action="{{ url_for('login') }}">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" name="username" id="username" required autocomplete="username">
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="button button-filled button-block">Log in</button>
+    </form>
+
+    <p class="auth-switch">Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a></p>
+  </div>
+</main>
+{% endblock %}

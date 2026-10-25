@@ -67,6 +67,30 @@ def opportunities():
         opportunities=all_opportunities
     )
 
+@app.route("/opportunities/<int:opportunity_id>")
+def opportunity_detail(opportunity_id):
+    # Read-only for now. The detail page also has an "Add to my list" form that posts to
+    # /opportunities/<id>/add; that route doesn't exist yet (the backend must add it, and pass
+    # org_name, spots_left, in_list, and the other optional fields the template reads).
+    opportunity = db.get_or_404(Opportunity, opportunity_id)
+    return render_template("opportunity_detail.html", opportunity=opportunity)
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("home"))
+
+# Volunteer onboarding questionnaire and volunteer dashboard, GET only for now. The backend must
+# own these (require login, handle the onboarding POST, pass real data). Until then the templates
+# show clearly labeled sample data.
+@app.route("/onboarding")
+def onboarding():
+    return render_template("onboarding.html")
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
+
 @app.route("/login",methods=["GET","POST"])
 def login():
     if request.method == "POST":
@@ -81,7 +105,8 @@ def login():
             else:
                 return redirect(url_for("organization_dashboard"))
         else:
-            print("bad username or password")
+            # The login page shows flashed messages.
+            flash("Invalid username or password.")
             return redirect(url_for("login"))
     return render_template("login.html")
 

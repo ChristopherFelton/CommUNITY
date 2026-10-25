@@ -1,13 +1,507 @@
-<h1>Volunteer Opportunities</h1>
+{% extends "base.html" %}
 
-{% for opportunity in opportunities %}
-    <div>
-        <h2>{{ opportunity.title }}</h2>
-        <p>{{ opportunity.description }}</p>
-        <p>Location: {{ opportunity.location }}</p>
-        <p>Date: {{ opportunity.date }}</p>
-        <p>Capacity: {{ opportunity.capacity }}</p>
-    </div>
+{# ================= SAMPLE DATA - DELETE WHEN BACKEND PASSES REAL DATA =================
+   These values are used ONLY when the backend doesn't pass the real variables.
+   Real data contract (passed by the backend with render_template):
+     opportunities - list, already filtered, matched, and sorted by the backend. Each item has
+                     id, title, description, location, date, start_time, end_time, capacity, spots_left,
+                     org_name, and optionally category, image_url, hours, distance_miles,
+                     match_score (0-100), and match_reasons (list of short strings)
+     answers       - dict of the user's saved onboarding answers: age, school_level, skills (list),
+                     interests (list), hours_per_week, time_period, deadline (optional),
+                     zip_code, radius (optional, miles)
+   To remove the samples, delete everything from here to "END SAMPLE DATA", and the
+   "SAMPLE MODE ONLY" block further down. #}
+{% set using_sample_data = opportunities is not defined %}
+{# The sample answers show only in sample mode; with real opportunities and no answers passed, the bubbles stay empty. #}
+{% set answers = answers if answers is defined else ({
+  "age": 15,
+  "school_level": "high",
+  "skills": ["Reading aloud", "Tutoring"],
+  "interests": ["Animals", "Reading", "STEM"],
+  "hours_per_week": 3,
+  "time_period": "1_month",
+  "zip_code": "11790",
+  "radius": 10
+} if using_sample_data else {}) %}
+{% set opportunities = opportunities if opportunities is defined else [
+  {
+    "id": 1, "title": "Library Story Time Helper", "org_name": "Maple Street Library", "category": "library",
+    "description": "Help the children's librarian run Saturday story time: greet families, hand out craft supplies, and read a picture book aloud.",
+    "location": "Maple Street Library, Children's Room", "date": "Sat, Oct 31", "start_time": "10:00 AM", "end_time": "11:30 AM",
+    "capacity": 4, "spots_left": 2, "hours": 1.5, "distance_miles": 1.2, "match_score": 91,
+    "match_reasons": ["Matches your skill: Reading aloud", "Matches your interest: Reading", "Fits your 3 hours a week"]
+  },
+  {
+    "id": 5, "title": "Dog Walking Buddies", "org_name": "Happy Tails Rescue", "category": "animals",
+    "description": "Take friendly shelter dogs on short neighborhood walks so they get exercise and practice meeting new people.",
+    "location": "Happy Tails Rescue, 42 Birch Lane", "date": "Sun, Nov 1", "start_time": "9:00 AM", "end_time": "11:00 AM",
+    "capacity": 10, "spots_left": 6, "hours": 2, "distance_miles": 3.2, "match_score": 96,
+    "match_reasons": ["Matches your interest: Animals", "Open to ages 14 and up", "Fits your 3 hours a week"]
+  },
+  {
+    "id": 2, "title": "After-School Homework Club", "org_name": "Brightside Youth Center", "category": "education",
+    "description": "Sit with elementary students while they finish homework, help with reading and math, and cheer them on.",
+    "location": "Brightside Youth Center, Room 4", "date": "Wed, Nov 4", "start_time": "3:30 PM", "end_time": "5:00 PM",
+    "capacity": 6, "spots_left": 3, "hours": 1.5, "distance_miles": 4.8, "match_score": 88,
+    "match_reasons": ["Matches your skill: Tutoring", "Matches your interest: STEM"]
+  },
+  {
+    "id": 7, "title": "Community Garden Workday", "org_name": "Greenway Neighbors", "category": "environment",
+    "description": "Pull weeds, spread mulch, and plant spring bulbs in the shared neighborhood garden. Tools and gloves provided.",
+    "location": "Greenway Community Garden, Elm Street", "date": "Sat, Nov 7", "start_time": "9:00 AM", "end_time": "12:00 PM",
+    "capacity": 20, "spots_left": 14, "hours": 3, "distance_miles": 6.5, "match_score": 72,
+    "match_reasons": ["Fits your 3 hours a week", "Within 10 miles of 11790"]
+  },
+  {
+    "id": 4, "title": "Food Pantry Packing Night", "org_name": "Harbor Community Pantry", "category": "food",
+    "description": "Pack bags of groceries for families picking up on Saturday. No experience needed; shifts start with a short safety talk.",
+    "location": "Harbor Community Pantry, 210 Main Street", "date": "Tue, Nov 10", "start_time": "5:00 PM", "end_time": "7:00 PM",
+    "capacity": 12, "spots_left": 0, "hours": 2, "distance_miles": 2.1, "match_score": 67,
+    "match_reasons": ["Close to home: 2.1 miles"]
+  },
+  {
+    "id": 8, "title": "Robotics Workshop Assistant", "org_name": "Harbor Makerspace", "category": "education",
+    "description": "Help middle schoolers build and program small robots. You'll hand out parts, troubleshoot, and keep teams on track.",
+    "location": "Harbor Makerspace, 9 Dock Road", "date": "Sat, Nov 14", "start_time": "1:00 PM", "end_time": "4:00 PM",
+    "capacity": 5, "spots_left": 4, "hours": 3, "distance_miles": 7.9, "match_score": 90,
+    "match_reasons": ["Matches your interest: STEM", "Matches your skill: Tutoring"]
+  },
+  {
+    "id": 3, "title": "Cat Socializing Hour", "org_name": "Whisker Haven Shelter", "category": "animals",
+    "description": "Spend quiet time with shy cats so they get comfortable with people and are ready for their new homes.",
+    "location": "Whisker Haven Shelter, 18 Willow Court", "date": "Sun, Nov 15", "start_time": "1:00 PM", "end_time": "3:00 PM",
+    "capacity": 4, "spots_left": 1, "hours": 2, "distance_miles": 9.4, "match_score": 83,
+    "match_reasons": ["Matches your interest: Animals"]
+  },
+  {
+    "id": 6, "title": "Senior Center Game Afternoon", "org_name": "Oak Hollow Senior Center",
+    "description": "Play cards and board games with residents, chat, and help set up snacks. A relaxed, friendly afternoon.",
+    "location": "Oak Hollow Senior Center, Lounge", "date": "Sat, Nov 21", "start_time": "2:00 PM", "end_time": "4:00 PM",
+    "capacity": 10, "spots_left": 9, "distance_miles": 5.3, "match_score": 58
+  }
+] %}
+{# ================= END SAMPLE DATA ================= #}
+
+{% from "_macros.html" import event_tile, fmt_date, fmt_time, chip_picker, default_skill_options, default_interest_options %}
+{% set skill_options = skill_options if skill_options is defined else default_skill_options %}
+{% set interest_options = interest_options if interest_options is defined else default_interest_options %}
+
+{# ---------- Current values for every control ----------
+   Each one comes from the query string first (what the person just submitted), then from their
+   saved answers, then from a default. The form always sends age and zip_code, so when either is in
+   the query string the form was submitted: skills and interests then come only from the query string,
+   so removing every chip really does clear them. #}
+{% set args = request.args %}
+{% set saved = answers if answers else {} %}
+{% set form_sent = "age" in args or "zip_code" in args %}
+{% macro pick(name) %}{% if name in args %}{{ args.get(name) }}{% elif saved.get(name) is not none %}{{ saved.get(name) }}{% endif %}{% endmacro %}
+
+{% set q = args.get("q", "") %}
+{% set sort = args.get("sort", "best") %}
+{% if sort not in ["best", "closest", "soonest", "spots", "newest"] %}{% set sort = "best" %}{% endif %}
+{% set age = pick("age") | trim %}
+{% set school_level = pick("school_level") | trim %}
+{% set hours_raw = pick("hours_per_week") | trim %}
+{% set hours_per_week = ("%g" | format(hours_raw | float)) if hours_raw else "" %}
+{% set time_period = pick("time_period") | trim %}
+{% set deadline = pick("deadline") | trim %}
+{% set zip_code = pick("zip_code") | trim %}
+{% set radius_raw = pick("radius") | trim %}
+{% set radius = (radius_raw | float | int | string) if radius_raw else "10" %}
+{% if form_sent %}
+  {% set skills = args.getlist("skills") %}
+  {% set interests = args.getlist("interests") %}
 {% else %}
-    <p>No opportunities found.</p>
-{% endfor %}
+  {% set skills = saved.get("skills") or [] %}
+  {% set interests = saved.get("interests") or [] %}
+{% endif %}
+{% set skills = [skills] if skills is string else skills | list %}
+{% set interests = [interests] if interests is string else interests | list %}
+
+{% set school_labels = {"elementary": "Elementary", "middle": "Middle school", "high": "High school", "college": "College or university", "none": "Not in school"} %}
+{% set time_labels = {"2_weeks": "2 weeks", "1_month": "1 month", "3_months": "3 months", "6_months": "6 months", "custom": "A specific date"} %}
+{% set month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] %}
+
+{# ================= SAMPLE MODE ONLY - skipped when the backend passes real data =================
+   Makes the sample page feel real: filters by the search text and sorts by the chosen option.
+   With real data the backend does the filtering, matching, ranking, and sorting, and the template
+   shows the list exactly in the order it arrives. #}
+{% if using_sample_data %}
+  {% set ns = namespace(items=[]) %}
+  {% set q_lower = q | trim | lower %}
+  {% for o in opportunities %}
+    {% if not q_lower or q_lower in (o.title ~ " " ~ o.description ~ " " ~ o.org_name) | lower %}
+      {% set ns.items = ns.items + [o] %}
+    {% endif %}
+  {% endfor %}
+  {% if sort == "best" %}{% set ns.items = ns.items | sort(attribute="match_score", reverse=true) %}
+  {% elif sort == "closest" %}{% set ns.items = ns.items | sort(attribute="distance_miles") %}
+  {% elif sort == "spots" %}{% set ns.items = ns.items | sort(attribute="spots_left", reverse=true) %}
+  {% elif sort == "newest" %}{% set ns.items = ns.items | sort(attribute="id", reverse=true) %}
+  {% endif %}
+  {# "soonest" keeps the list order: the sample list is already in date order. #}
+  {% set opportunities = ns.items %}
+{% endif %}
+{# ================= END SAMPLE MODE ONLY ================= #}
+
+{% set count = opportunities | length %}
+
+{# Small decorative icons (original line drawings). #}
+{% macro icon(name) %}
+<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  {% if name == "search" %}
+  <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.6 20.5 20.7"/>
+  {% elif name == "pencil" %}
+  <path d="M15.2 5.2l3.6 3.6L9 18.6l-4.4.8.8-4.4z"/><path d="M13.3 7.1l3.6 3.6"/>
+  {% elif name == "calendar" %}
+  <rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>
+  {% elif name == "pin" %}
+  <path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0 1 13 0c0 5.2-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>
+  {% elif name == "people" %}
+  <circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M15.5 6a2.8 2.8 0 0 1 0 5.4M17 14.3c1.8.6 3 2.2 3.5 4.7"/>
+  {% elif name == "clock" %}
+  <circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>
+  {% elif name == "home" %}
+  <path d="M4.5 11.5 12 4.8l7.5 6.7"/><path d="M6.5 10v9.5h11V10"/>
+  {% endif %}
+</svg>
+{% endmacro %}
+
+{# Buttons at the bottom of every answer panel. #}
+{% macro panel_actions() %}
+<div class="answer-actions">
+  <button type="submit" class="button button-filled button-small" form="search-form">Update results</button>
+  {# Shown by main.js: puts this answer back the way it was and closes the panel. #}
+  <button type="button" class="text-button" data-pop-cancel hidden>Cancel</button>
+</div>
+{% endmacro %}
+
+{# "Matches..." texts: a number like 3.0 prints as 3. #}
+{% macro num(value) %}{{ "%g" | format(value | float) }}{% endmacro %}
+
+{% block title %}Opportunities for you · CommUNITY{% endblock %}
+
+{% block content %}
+<!-- Top bar for signed-in pages: small logo on the left, links on the right. -->
+<header class="topbar topbar--wide">
+  <a class="logo logo--small" href="/dashboard"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
+  <nav class="topbar-nav" aria-label="Account">
+    <a class="topbar-link" href="/dashboard">My events</a>
+    <!-- TODO switch to url_for once the backend adds that route (/logout). -->
+    <a class="topbar-link" href="/logout">Log out</a>
+  </nav>
+</header>
+
+<main class="results-page">
+  {% if using_sample_data %}
+  <p class="sample-note">Showing sample data. The real matches will come from the backend.</p>
+  {% endif %}
+
+  <div class="results-intro">
+    <svg class="doodle results-doodle" aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
+    <h1 class="dashboard-title">Opportunities picked for you</h1>
+    <p class="dashboard-subtitle results-subtitle">Based on what you told us. Change any answer below and we'll refresh your matches.</p>
+  </div>
+
+  {# One GET form for the search, the edited answers, and the sort. The backend reads the query
+     string and does the real filtering and ranking; nothing here is saved by the browser. #}
+  <form id="search-form" class="search-form" method="get" action="/opportunities" role="search" aria-label="Search and refine opportunities">
+    <div class="search-bar">
+      <label class="visually-hidden" for="q">Search opportunities</label>
+      {{ icon("search") }}
+      <input type="search" id="q" name="q" value="{{ q }}" placeholder="Search by name, place, or cause"
+             autocomplete="off" enterkeyhint="search" maxlength="100">
+      <button type="button" class="search-clear" data-search-clear aria-label="Clear search" hidden>
+        <span aria-hidden="true">×</span>
+      </button>
+      <button type="submit" class="button button-filled search-submit">Search</button>
+    </div>
+
+    <!-- Answer bubbles: each opens a small panel to change that answer. Their fields belong to this
+         form (form="search-form"), so everything is sent together. -->
+    <div class="answers">
+      <p class="answers-title" id="answers-title">Your answers</p>
+      <div class="answer-row" role="group" aria-labelledby="answers-title">
+
+        <details class="answer-pop">
+          <summary class="answer-bubble">
+            <span class="visually-hidden">Edit </span><span class="answer-label">Age:</span>
+            <span class="answer-value">{{ age if age else "Add" }}</span>
+            {{ icon("pencil") }}
+          </summary>
+          <div class="answer-panel">
+            <div class="field">
+              <label for="edit-age">Your age</label>
+              <input type="number" id="edit-age" name="age" min="5" max="120" inputmode="numeric"
+                     value="{{ age }}" form="search-form">
+            </div>
+            {{ panel_actions() }}
+          </div>
+        </details>
+
+        <details class="answer-pop">
+          <summary class="answer-bubble">
+            <span class="visually-hidden">Edit </span><span class="answer-label">School:</span>
+            <span class="answer-value">{{ school_labels.get(school_level, school_level) if school_level else "Add" }}</span>
+            {{ icon("pencil") }}
+          </summary>
+          <div class="answer-panel">
+            <fieldset class="field">
+              <legend>School level</legend>
+              <div class="pill-options">
+                {% for value, label in school_labels.items() %}
+                <div class="choice-option choice-option--pill">
+                  <input type="radio" name="school_level" value="{{ value }}" id="edit-school-{{ value }}"
+                         form="search-form"{% if school_level == value %} checked{% endif %}>
+                  <label for="edit-school-{{ value }}">{{ label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </fieldset>
+            {{ panel_actions() }}
+          </div>
+        </details>
+
+        <details class="answer-pop">
+          <summary class="answer-bubble">
+            <span class="visually-hidden">Edit </span><span class="answer-label">Skills:</span>
+            <span class="answer-value">{% if skills %}{{ skills[:2] | join(", ") }}{% if skills | length > 2 %} +{{ skills | length - 2 }}{% endif %}{% else %}Add{% endif %}</span>
+            {{ icon("pencil") }}
+          </summary>
+          <div class="answer-panel answer-panel--wide">
+            <fieldset class="field">
+              <legend>Your skills</legend>
+              {{ chip_picker("skills", "skills", skill_options, skills, false, "search-form") }}
+            </fieldset>
+            {{ panel_actions() }}
+          </div>
+        </details>
+
+        <details class="answer-pop">
+          <summary class="answer-bubble">
+            <span class="visually-hidden">Edit </span><span class="answer-label">Interests:</span>
+            <span class="answer-value">{% if interests %}{{ interests[:2] | join(", ") }}{% if interests | length > 2 %} +{{ interests | length - 2 }}{% endif %}{% else %}Add{% endif %}</span>
+            {{ icon("pencil") }}
+          </summary>
+          <div class="answer-panel answer-panel--wide">
+            <fieldset class="field">
+              <legend>Causes you care about</legend>
+              {{ chip_picker("interests", "interests", interest_options, interests, false, "search-form") }}
+            </fieldset>
+            {{ panel_actions() }}
+          </div>
+        </details>
+
+        <details class="answer-pop">
+          <summary class="answer-bubble">
+            <span class="visually-hidden">Edit </span><span class="answer-label">Hours:</span>
+            <span class="answer-value">{{ (hours_per_week ~ " per week") if hours_per_week else "Add" }}</span>
+            {{ icon("pencil") }}
+          </summary>
+          <div class="answer-panel">
+            <div class="field">
+              <label for="edit-hours">Hours per week</label>
+              <input type="number" id="edit-hours" name="hours_per_week" min="0.5" max="40" step="0.5"
+                     inputmode="decimal" value="{{ hours_per_week }}" form="search-form">
+            </div>
+            {{ panel_actions() }}
+          </div>
+        </details>
+
+        <details class="answer-pop">
+          <summary class="answer-bubble">
+            <span class="visually-hidden">Edit </span><span class="answer-label">Time:</span>
+            <span class="answer-value">
+              {%- if time_period == "custom" and deadline -%}
+                {# Dates are "YYYY-MM-DD" (a date object from the backend prints the same way). #}
+                {%- set parts = deadline.split("-") -%}
+                {%- if parts | length == 3 and parts[1] | int in range(1, 13) -%}By {{ month_names[parts[1] | int - 1] }} {{ parts[2] | int }}{%- else -%}By {{ deadline }}{%- endif -%}
+              {%- elif time_period == "custom" -%}Pick a date
+              {%- elif time_period -%}{{ time_labels.get(time_period, time_period) }}
+              {%- else -%}Add{%- endif -%}
+            </span>
+            {{ icon("pencil") }}
+          </summary>
+          <div class="answer-panel">
+            <fieldset class="field">
+              <legend>How long you have</legend>
+              <div class="pill-options">
+                {% for value, label in time_labels.items() %}
+                <div class="choice-option choice-option--pill">
+                  <input type="radio" name="time_period" value="{{ value }}" id="edit-period-{{ value }}"
+                         form="search-form"{% if time_period == value %} checked{% endif %}>
+                  <label for="edit-period-{{ value }}">{{ label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+              {# Without JavaScript this always shows; with it, only for "A specific date". #}
+              <div class="field deadline-field" data-deadline>
+                <label for="edit-deadline">Your date</label>
+                <input type="date" id="edit-deadline" name="deadline" value="{{ deadline }}" form="search-form">
+              </div>
+            </fieldset>
+            {{ panel_actions() }}
+          </div>
+        </details>
+
+        <details class="answer-pop">
+          <summary class="answer-bubble">
+            <span class="visually-hidden">Edit </span><span class="answer-label">Near:</span>
+            <span class="answer-value">{% if zip_code %}{{ zip_code }} – {{ ("any distance") if radius == "0" else (radius ~ " mi") }}{% else %}Add ZIP{% endif %}</span>
+            {{ icon("pencil") }}
+          </summary>
+          <div class="answer-panel">
+            <div class="form-row">
+              <div class="field">
+                <label for="edit-zip">ZIP code</label>
+                <input type="text" id="edit-zip" name="zip_code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5"
+                       autocomplete="postal-code" value="{{ zip_code }}" form="search-form"
+                       title="A 5-digit ZIP code">
+              </div>
+              <div class="field">
+                <label for="edit-radius">Within</label>
+                <select id="edit-radius" name="radius" form="search-form">
+                  {% for value, label in [("5", "5 miles"), ("10", "10 miles"), ("25", "25 miles"), ("50", "50 miles"), ("0", "Any distance")] %}
+                  <option value="{{ value }}"{% if radius == value %} selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            {{ panel_actions() }}
+          </div>
+        </details>
+
+        <a class="text-link answers-retake" href="/onboarding">Retake all the questions</a>
+      </div>
+
+      {# TODO the backend decides what to do with save_answers=1 (e.g. update the saved answers).
+         Nothing is saved by this page itself. #}
+      <label class="remember-check">
+        <input type="checkbox" name="save_answers" value="1" form="search-form"{% if args.get("save_answers") == "1" %} checked{% endif %}>
+        <span>Remember these changes for next time</span>
+      </label>
+    </div>
+
+    <div class="results-bar">
+      <p class="results-count" aria-live="polite"><strong>{{ count }}</strong> {{ "opportunity" if count == 1 else "opportunities" }}</p>
+      <div class="field sort-field">
+        <label for="sort">Sort by</label>
+        <select id="sort" name="sort" data-auto-submit>
+          {% for value, label in [("best", "Best match"), ("closest", "Closest"), ("soonest", "Soonest"), ("spots", "Most spots open"), ("newest", "Newest")] %}
+          <option value="{{ value }}"{% if sort == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <noscript><button type="submit" class="button button-small button-outline">Apply</button></noscript>
+      </div>
+    </div>
+  </form>
+
+  <section class="results" aria-labelledby="results-heading">
+    <h2 class="visually-hidden" id="results-heading">Matching opportunities</h2>
+
+    {% if opportunities %}
+    <ol class="results-list">
+      {% for o in opportunities %}
+      {% set top_pick = loop.first and sort == "best" %}
+      <li class="result-item" style="--i: {{ [loop.index0, 8] | min }}">
+        <article class="card card--wide card--note result-card{% if top_pick %} result-card--top{% endif %}" aria-labelledby="result-{{ o.id }}">
+          {% if top_pick %}
+          <p class="top-pick">
+            <svg class="top-pick-icon" aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
+            Top pick for you
+          </p>
+          {% endif %}
+
+          <div class="result-main">
+            {{ event_tile(o) }}
+
+            <div class="event-body">
+              <div class="result-head">
+                <h3 class="event-title result-title" id="result-{{ o.id }}"><a href="/opportunities/{{ o.id }}">{{ o.title }}</a></h3>
+                {% if o.match_score is defined and o.match_score is not none %}
+                {% set score = o.match_score | round | int %}
+                <p class="match-badge match-badge--{{ 'high' if score >= 85 else ('mid' if score >= 70 else 'low') }}">
+                  <svg aria-hidden="true" focusable="false"><use href="#doodle-heart"></use></svg>
+                  {{ score }}% match
+                </p>
+                {% endif %}
+              </div>
+              {# The database has no org_name yet, so the organization's username (poster) stands in. #}
+              {% set org_name = o.org_name if o.org_name is defined else (o.poster if o.poster is defined and o.poster else "") %}
+              {% if org_name %}<p class="result-org">{{ org_name }}</p>{% endif %}
+
+              <ul class="result-facts">
+                <li>
+                  {{ icon("calendar") }}
+                  <span>{{ fmt_date(o.date) }}{% if o.start_time is defined and o.start_time %} · {{ fmt_time(o.start_time) }}{% if o.end_time is defined and o.end_time %} – {{ fmt_time(o.end_time) }}{% endif %}{% endif %}</span>
+                </li>
+                <li>
+                  {{ icon("pin") }}
+                  <span>{{ o.location }}{% if o.distance_miles is defined and o.distance_miles is not none %} · {{ num(o.distance_miles | round(1)) }} {{ "mile" if o.distance_miles == 1 else "miles" }} away{% endif %}</span>
+                </li>
+                {% if o.spots_left is defined and o.spots_left is not none %}
+                <li>
+                  {{ icon("people") }}
+                  {% if o.spots_left <= 0 %}
+                  <span class="badge badge--full">Full</span>
+                  {% elif o.spots_left <= 3 %}
+                  <span class="badge badge--few">Only {{ o.spots_left }} {{ "spot" if o.spots_left == 1 else "spots" }} left</span>
+                  {% else %}
+                  <span>{{ o.spots_left }} spots left</span>
+                  {% endif %}
+                </li>
+                {% elif o.capacity is defined and o.capacity %}
+                {# No spots_left yet (signups aren't tracked), so show how many volunteers are needed. #}
+                <li>
+                  {{ icon("people") }}
+                  <span>{{ o.capacity }} {{ "volunteer" if o.capacity == 1 else "volunteers" }} needed</span>
+                </li>
+                {% endif %}
+                {% if o.hours is defined and o.hours is not none %}
+                <li>
+                  {{ icon("clock") }}
+                  <span>Earn {{ num(o.hours) }} {{ "hour" if o.hours == 1 else "hours" }}</span>
+                </li>
+                {% endif %}
+              </ul>
+
+              {% if o.match_reasons is defined and o.match_reasons %}
+              <div class="reasons">
+                <p class="reasons-title">Why this fits you</p>
+                <ul class="reasons-list">
+                  {% for reason in o.match_reasons[:3] %}
+                  <li class="reason-chip">
+                    <svg aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
+                    {{ reason }}
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+
+              <a class="button button-filled button-small result-details" href="/opportunities/{{ o.id }}">View details<span class="visually-hidden">: {{ o.title }}</span></a>
+            </div>
+          </div>
+        </article>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <div class="card card--wide card--note empty-state results-empty">
+      <svg class="doodle empty-doodle" aria-hidden="true" focusable="false"><use href="#doodle-sprout"></use></svg>
+      <p class="results-empty-title">We couldn't find a match yet.</p>
+      <p>Try a wider distance, fewer interests, or a different search.</p>
+      <div class="results-empty-actions">
+        <a class="button button-small button-outline" href="/opportunities">Clear search</a>
+        <a class="button button-small button-filled" href="/onboarding">Retake the questions</a>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+</main>
+
+<!-- base.html doesn't load main.js, so this page loads it itself (answer bubbles, chip pickers, sort). -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}
