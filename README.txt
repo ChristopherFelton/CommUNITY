@@ -15,6 +15,20 @@ This project is being developed collaboratively for a hackathon.
 - **Deployment:** Vercel (planned)
 - **Version control:** GitHub
 
+## Deploying to Vercel
+
+The Flask application is exported as `app` from the root-level `app.py`, and
+`requirements.txt` declares the Python dependencies so Vercel can detect and
+build the Flask application. Set the Vercel project Root Directory to the
+repository root (the folder containing `app.py`).
+
+Configure these values in the Vercel project's Environment Variables; do not
+commit them in `.env`:
+
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `GOOGLE_MAPS_API_KEY` (needed for ZIP-code and event-location geocoding)
+
 Do not introduce a different frontend framework, backend framework, or database without discussing it with the team first.
 
 ## Git Workflow
