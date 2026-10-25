@@ -202,4 +202,5 @@ def organization_dashboard():
     )
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Port 5000 is taken on this Mac (AirPlay Receiver), so run on 5001.
+    app.run(debug=True, port=5001)
