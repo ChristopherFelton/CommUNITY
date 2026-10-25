@@ -58,6 +58,14 @@
     </symbol>
   </svg>
 
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="form-message" role="alert">
+      {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
   <!-- Each page fills in this block with its own content. -->
   {% block content %}{% endblock %}
 </body>

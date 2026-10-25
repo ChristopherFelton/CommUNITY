@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 import os
+from math import isfinite
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
@@ -43,11 +44,111 @@ app.config["GOOGLE_MAPS_API_KEY"] = os.environ.get("GOOGLE_MAPS_API_KEY", "")
 
 db.init_app(app)
 
-from models import Opportunity,User
+from models import Opportunity,User,Signup
 
 with app.app_context():
     db.create_all()
 
+def searchBar(query, oppList):
+    results = []
+
+    for i in range(len(oppList)):
+        if query.lower() in oppList[i].title.lower() or query.lower() in oppList[i].poster.lower():
+            results.append(oppList[i])
+
+    return results
+
+def sortByTime(oppList):
+    sortedList = []
+    indexList = []
+    timeList = []
+
+    for i in range(len(oppList)):
+        timeDifference = oppList[i].date - datetime.now()
+        if timeDifference>timedelta(0):
+            timeList.append(timeDifference)
+        else:
+            timeList.append(None)
+        indexList.append(i)
+
+    for i in range(len(timeList)):
+        for j in range(len(timeList)-i):
+            if timeList[indexList[i:len(indexList)][j]] != None:
+                if timeList[indexList[i]] == None or timeList[indexList[i]] > timeList[indexList[i:len(indexList)][j]]:
+                    n = indexList[j+i]
+                    del indexList[j+i]
+                    indexList.insert(i, n)
+
+    for i in range(len(oppList)):
+        if timeList[indexList[i]] != None:
+            sortedList.append(oppList[indexList[i]])
+
+    return sortedList
+
+def sortByDistance(user, radius, oppList):
+    sortedList = []
+    oppDist = []
+    indexList = []
+    userCoord = (user.latitude, user.longitude)
+
+    for i in range(len(oppList)):
+        distance = geodesic(userCoord, (oppList[i].latitude, oppList[i].longitude)).miles
+        indexList.append(i)
+        if datetime.now() < oppList[i].date and oppList[i].capacity != 0:
+            if(radius>0):
+                if(distance <= radius):
+                    oppDist.append(distance)
+                else:
+                    oppDist.append(None)
+            else:
+                oppDist.append(distance)
+        else:
+            oppDist.append(None)
+
+    for i in range(len(oppDist)):
+        for j in range(len(oppDist)-i):
+            if oppDist[indexList[i:len(indexList)][j]] != None:
+                if oppDist[indexList[i]] == None or oppDist[indexList[i]] > oppDist[indexList[i:len(indexList)][j]]:
+                    n = indexList[j+i]
+                    del indexList[j+i]
+                    indexList.insert(i, n)
+
+    for i in range(len(oppList)):
+        if(oppDist[indexList[i]] != None):
+            sortedList.append(oppList[indexList[i]])
+
+    return sortedList
+
+def sortBySkill(skillList, oppList):
+    sortedList = []
+    indexList = []
+    recSkillsList = []  #a list of skills recommended by the opportunity of the same index
+
+    for i in range(len(oppList)):
+        recSkillsList.append(oppList[i].skills.split(", "))
+        indexList.append(i)
+
+    countList = [0] * len(recSkillsList)
+
+    for i in range(len(skillList)):
+        for j in range(len(recSkillsList)):
+            for k in range(len(recSkillsList[j])):
+                if recSkillsList[j][k] == skillList[i]:
+                    countList[j] += 1
+                    break
+
+    n = 0
+    for i in range(len(countList)):
+        for j in range(len(countList)-i):
+            if countList[indexList[i:len(indexList)][j]] > countList[indexList[i]]:
+                n = indexList[j+i]
+                del indexList[j+i]
+                indexList.insert(i, n)
+
+    for i in range(len(indexList)):
+        sortedList.append(oppList[indexList[i]])
+
+    return sortedList
 
 @app.route("/")
 def home():
@@ -56,11 +157,19 @@ def home():
 
 @app.route("/opportunities",methods=["GET","POST"])
 def opportunities():
+    all_opportunities = Opportunity.query.all()
     #if we're not signed in
     if session.get("username") is None:
+        flash("Please sign in to browse opportunities.")
         return redirect(url_for("home"))
     #if we're not a volunteer
-    if User.query.filter_by(username=session["username"]).first().volunteer == False:
+    user = db.session.get(User, session["username"])
+    if user is None:
+        session.clear()
+        flash("Your session has expired. Please sign in again.")
+        return redirect(url_for("login"))
+    if not user.volunteer:
+        flash("Opportunity browsing is only available to volunteers.")
         return redirect(url_for("organization_dashboard"))
 
     if request.method == "POST":
@@ -72,15 +181,27 @@ def opportunities():
         sort_by = request.form.get("sort", "best")
         #biggest acceptable radius
         radius = request.form.get("radius", "10")
-
-    all_opportunities = Opportunity.query.all()
+        if query != "":
+            distArr = sortByDistance(User.query.filter_by(username=session["username"]).first(), int(radius), searchBar(query, all_opportunities))
+        else:
+            distArr = sortByDistance(User.query.filter_by(username=session["username"]).first(), int(radius), all_opportunities)
+        bestArr = sortBySkill(selected_skills, distArr)
+        timeArr = sortByTime(distArr)
+        if(sort_by == "nearest"):
+            return render_template("opportunities.html",opportunities=distArr)
+        if(sort_by == "best"):
+            return render_template("opportunities.html",opportunities=bestArr)
+        if(sort_by == "soonest"):
+            return render_template("opportunities.html",opportunities=timeArr)
+   
     userSkills = User.query.filter_by(username=session["username"]).first().skills
     if userSkills == "":
-        userSkills = []
+        return render_template("opportunities.html",opportunities=all_opportunities)
     else:
-        userSkills=userSkills.split(",")
-    print(userSkills)
-    return render_template("opportunities.html",opportunities=all_opportunities)
+        userSkills=userSkills.split(", ")
+        bestArr = sortBySkill(userSkills, sortByDistance(User.query.filter_by(username=session["username"]).first(), 0, all_opportunities))
+        return render_template("opportunities.html",opportunities=bestArr)
+
 @app.route("/logout")
 def logout():
     session.clear()
@@ -90,12 +211,18 @@ def logout():
 def dashboard():
     username = session.get("username")
     if username == None:
+        flash("Please sign in to view your dashboard.")
         return redirect(url_for("login"))
     user = db.session.get(User, username)
+    if user is None:
+        session.clear()
+        flash("Your session has expired. Please sign in again.")
+        return redirect(url_for("login"))
     if not user.volunteer:
+        flash("The volunteer dashboard is only available to volunteers.")
         return redirect(url_for("organization_dashboard"))
-    #signups=[] needs to become the opportunities_id with all the events they signed up for later
-    return render_template("dashboard.html",user=user,signup=[])
+    signed_up_opportunities = (Opportunity.query.join(Signup, Signup.opportunity_id == Opportunity.id).filter(Signup.volunteer_username == username).all())
+    return render_template("dashboard.html",user=user,signups=signed_up_opportunities,)
 
 @app.route("/login",methods=["GET","POST"])
 def login():
@@ -111,7 +238,7 @@ def login():
             else:
                 return redirect(url_for("organization_dashboard"))
         else:
-            print("bad username or password")
+            flash("Incorrect username or password.")
             return redirect(url_for("login"))
     return render_template("login.html")
 
@@ -120,6 +247,9 @@ def signup():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
+        if User.query.filter_by(username=username).first() is not None:
+            flash("That username is already taken. Please choose another.")
+            return redirect(url_for("signup"))
         if request.form.get("volunteer") == "yes":
             volunteer = True
             name = request.form.get("name")
@@ -153,22 +283,36 @@ def signup():
 @app.route("/organization_dashboard",methods=["GET","POST"])
 def organization_dashboard():
     if session.get("username") is None:
+        flash("Please sign in to view the organization dashboard.")
         return redirect(url_for("home"))
-    if User.query.filter_by(username=session["username"]).first().volunteer:
-        all_opportunities = Opportunity.query.all()
-        return redirect(url_for("opportunities",opportunities=all_opportunities))
     username = session.get("username")
     if username is None:
+        flash("Please sign in to view the organization dashboard.")
         return redirect(url_for("login"))
 
     user = db.session.get(User, username)
     if user is None:
         session.clear()
+        flash("Your session has expired. Please sign in again.")
         return redirect(url_for("login"))
     if user.volunteer:
+        flash("The organization dashboard is only available to organizations.")
         return redirect(url_for("opportunities"))
 
     if request.method == "POST":
+        latitude = request.form.get("latitude", type=float)
+        longitude = request.form.get("longitude", type=float)
+        if (
+            latitude is None
+            or longitude is None
+            or not isfinite(latitude)
+            or not isfinite(longitude)
+            or not -90 <= latitude <= 90
+            or not -180 <= longitude <= 180
+        ):
+            flash("Please select a valid event location on the map.")
+            return redirect(url_for("organization_dashboard"))
+
         new_opportunity = Opportunity(
             title=request.form["title"],
             date=datetime.strptime(request.form["date"], "%Y-%m-%d"),
@@ -177,6 +321,8 @@ def organization_dashboard():
             skills=request.form["skills"],
             capacity=int(request.form["capacity"]),
             poster=username,
+            latitude=latitude,
+            longitude=longitude,
         )
         db.session.add(new_opportunity)
         db.session.commit()
@@ -188,70 +334,38 @@ def organization_dashboard():
         opportunities=my_opportunities
     )
 
+@app.route("/opportunities/<int:opportunity_id>")
+def opportunity_detail(opportunity_id):
+    opportunity = db.get_or_404(Opportunity, opportunity_id)
+    return render_template("opportunity_detail.html",opportunity=opportunity)
+
+@app.route("/opportunities/<int:opportunity_id>/add",methods=["POST"])
+def add(opportunity_id):
+    if session.get("username") is None:
+        flash("Please sign in before registering for an opportunity.")
+        return redirect(url_for("home"))
+    user = db.session.get(User, session["username"])
+    if user is None:
+        session.clear()
+        flash("Your session has expired. Please sign in again.")
+        return redirect(url_for("login"))
+    if not user.volunteer:
+        flash("Only volunteers can register for opportunities.")
+        return redirect(url_for("organization_dashboard"))
+    opportunity = db.session.get(Opportunity, opportunity_id)
+    if opportunity is None:
+        flash("That opportunity could not be found.")
+        return redirect(url_for("opportunities"))
+    if Signup.query.filter_by(
+        volunteer_username=user.username,
+        opportunity_id=opportunity_id,
+    ).first() is not None:
+        flash("You're already registered for this event.")
+        return redirect(url_for("opportunity_detail", opportunity_id=opportunity_id))
+    newSignup = Signup(volunteer_username=session["username"],opportunity_id=opportunity_id)
+    db.session.add(newSignup)
+
+    db.session.commit()
+    return redirect(url_for("opportunity_detail",opportunity_id=opportunity_id))
 if __name__ == "__main__":
     app.run(debug=True)
-
-def sortByDistance(user):
-    sortedList = []
-    oppList = Opportunity.query.all()
-    oppDist = []
-    indexList = []
-    userCoord = (user.longitude, user.latitude)
-
-    for i in range(len(oppList)):
-        indexList.append(i)
-        oppDist.append(geodisc(userCoord, (oppList[i].longitude, oppList[i].latitude)).miles)
-
-    i = 0
-    n = 0
-    while i < len(oppList):
-        for j in range(len(oppList)):
-            if oppDist[j] < oppDist[i]:
-                n = indexList[i]
-                indexList[i] = indexList[j]
-                indexList[j] = n
-                i += 1
-                break
-
-            i += 1
-
-    for i in range(len(oppList)):
-        sortedList.append(oppList[indexList[i]])
-
-    return sortedList 
-
-def sortBySkill(skillList, oppList):
-    sortedList = []
-    indexList = []
-    recSkillsList = []  #a list of skills recommended by the opportunity of the same index
-    maxCount = 0
-
-    for i in range(len(oppList)):
-        recSkillsList.append(oppList[i].get_skills().split(", "))
-        indexList.append(i)
-
-    countList = [0] * len(recSkillsList)
-
-    for i in range(len(skillList)):
-        for j in range(len(recSkillsList)):
-            for k in range(len(recSkillsList[j])):
-                if recSkillsList[j][k] == skillList[i]:
-                    countList[j] += 1
-                    if maxCount < countList[j]:
-                        maxCount = countList[j]
-                    break
-
-    n = 0
-    for i in range(maxCount, 0, -1):
-        for j in range(len(countList)):
-            if countList[indexList[j]] == i:
-                n = indexList[j]
-                del indexList[j]
-                indexList.insert(0, n)
-
-    for i in range(len(indexList)):
-        sortedList.append(oppList[indexList[i]])
-
-    sortedList.reverse()
-    return sortedList
-

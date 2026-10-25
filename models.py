@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from extensions import db
 class Opportunity(db.Model):
     __tablename__ = "opportunities"
@@ -23,3 +25,11 @@ class User(db.Model):
     name = db.Column(db.Text,nullable=True)
     longitude = db.Column(db.Float)
     latitude = db.Column(db.Float)
+
+class Signup(db.Model):
+    __tablename__ = "signups"
+    id = db.Column(db.Integer, primary_key=True)
+    volunteer_username = db.Column(db.String(16), db.ForeignKey("users.username"), nullable=False)
+    opportunity_id = db.Column(db.Integer, db.ForeignKey("opportunities.id"), nullable=False)
+
+    __table_args__ = (db.UniqueConstraint("volunteer_username","opportunity_id",name="unique_volunteer_opportunity",),)
