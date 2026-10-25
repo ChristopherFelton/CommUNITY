@@ -61,6 +61,33 @@
     const contentArea =
         document.getElementById("content-area");
 
+    const eventSkillOptions = [
+        "Animal Care",
+        "Childcare",
+        "Communication",
+        "Compassion",
+        "Customer Service",
+        "Environmental Care",
+        "Environmental Knowledge",
+        "Event Coordination",
+        "Food Preparation",
+        "Gardening",
+        "Hospitality",
+        "Leadership",
+        "Manual Labor",
+        "Organization",
+        "Patience",
+        "Physical Agility",
+        "Physical Lifting",
+        "Public Speaking",
+        "Sanitation",
+        "Sorting",
+        "Teaching",
+        "Teamwork",
+        "Tech Savviness",
+        "Tutoring",
+    ];
+
     let mapsScriptLoading = false;
     let mapsInitialized = false;
 
@@ -130,16 +157,22 @@
                     name="longitude"
                 >
 
-                <div class="field">
-                    <label for="skills">Skills (comma-separated)</label>
+                <fieldset class="field">
+                    <legend>Skills needed</legend>
+                    <p class="field-hint" id="skills-hint">
+                        Select the skills volunteers will use for this event.
+                    </p>
+                    <div id="event-skill-options" class="chip-cloud"></div>
                     <input
                         type="text"
                         id="skills"
                         name="skills"
-                        placeholder="Tutoring, Python, First aid"
+                        aria-label="Selected skills"
+                        aria-describedby="skills-hint"
+                        readonly
                         required
                     >
-                </div>
+                </fieldset>
 
                 <div class="field">
                     <label for="capacity">Number of volunteers needed</label>
@@ -163,6 +196,43 @@
                 <a href="{{ url_for('organization_dashboard') }}">Cancel</a>
             </p>
         `;
+
+        const skillOptionsElement =
+            document.getElementById("event-skill-options");
+        const skillsInput =
+            document.getElementById("skills");
+        const skillCheckboxes = [];
+
+        for (const skill of eventSkillOptions) {
+            const label = document.createElement("label");
+            label.className = "chip-check";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = skill;
+            skillCheckboxes.push(checkbox);
+
+            const text = document.createElement("span");
+            text.textContent = skill;
+            label.append(checkbox, text);
+            skillOptionsElement.appendChild(label);
+        }
+
+        function updateSelectedSkills() {
+            const selectedSkills = skillCheckboxes
+                .filter((checkbox) => checkbox.checked)
+                .map((checkbox) => checkbox.value);
+
+            skillsInput.value = selectedSkills.join(", ");
+            skillCheckboxes[0].setCustomValidity(
+                selectedSkills.length ? "" : "Select at least one skill."
+            );
+        }
+
+        for (const checkbox of skillCheckboxes) {
+            checkbox.addEventListener("change", updateSelectedSkills);
+        }
+        updateSelectedSkills();
 
         loadGoogleMaps();
     });

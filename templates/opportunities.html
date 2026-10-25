@@ -1,43 +1,75 @@
 {% extends "base.html" %}
-{% from "_macros.html" import event_tile, fmt_date %}
+{% from "_macros.html" import event_tile, fmt_date, fmt_time %}
+{% set args = request.form if request.method == "POST" else request.args %}
+{% set search_query = args.get("q", "") %}
+{% set sort = args.get("sort", "best") %}
+{% set radius = args.get("radius", "10") %}
+{% set selected_skills = args.getlist("skills") %}
+{% set skill_options = [
+  "Animal Care", "Childcare", "Communication", "Compassion",
+  "Customer Service", "Environmental Care", "Environmental Knowledge",
+  "Event Coordination", "Food Preparation", "Gardening", "Hospitality",
+  "Leadership", "Manual Labor", "Organization", "Patience",
+  "Physical Agility", "Physical Lifting", "Public Speaking", "Sanitation",
+  "Sorting", "Teaching", "Teamwork", "Tech Savviness", "Tutoring"
+] %}
+
+{% macro icon(name) %}
+<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  {% if name == "search" %}
+  <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.6 20.5 20.7"/>
+  {% elif name == "calendar" %}
+  <rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>
+  {% elif name == "pin" %}
+  <path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0 1 13 0c0 5.2-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>
+  {% elif name == "people" %}
+  <circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M15.5 6a2.8 2.8 0 0 1 0 5.4M17 14.3c1.8.6 3 2.2 3.5 4.7"/>
+  {% elif name == "clock" %}
+  <circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>
+  {% endif %}
+</svg>
+{% endmacro %}
+
+{% macro num(value) %}{{ "%g" | format(value | float) }}{% endmacro %}
 
 {% block title %}Volunteer Opportunities · CommUNITY{% endblock %}
 
 {% block content %}
 <header class="topbar topbar--wide">
-  <a class="logo logo--small" href="{{ url_for('dashboard') }}">
-    <span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span>
-  </a>
+  <a class="logo logo--small" href="/dashboard"><span class="logo__comm">Comm</span><span class="logo__unity">UNITY</span></a>
   <nav class="topbar-nav" aria-label="Account">
-    <a class="topbar-link" href="{{ url_for('dashboard') }}">My events</a>
-    <a class="topbar-link" href="{{ url_for('logout') }}">Log out</a>
+    <a class="topbar-link" href="/dashboard">My events</a>
+    <a class="topbar-link" href="/logout">Log out</a>
   </nav>
 </header>
 
 <main class="results-page">
   <div class="results-intro">
+    <svg class="doodle results-doodle" aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
     <h1 class="dashboard-title">Volunteer opportunities</h1>
-    <p class="dashboard-subtitle results-subtitle">
-      Search by keyword, filter by skills, and sort by distance or date.
-    </p>
+    <p class="dashboard-subtitle results-subtitle">Search by keyword, choose skills, and sort by distance or date.</p>
   </div>
 
-  <form class="search-form" method="get" action="{{ url_for('opportunities') }}"
-        role="search" aria-label="Search opportunities">
-    <input type="hidden" name="filters" value="1">
+  <form id="search-form" class="search-form" method="post" action="/opportunities"
+        role="search" aria-label="Search and filter opportunities">
     <div class="search-bar">
       <label class="visually-hidden" for="q">Search opportunities</label>
+      {{ icon("search") }}
       <input type="search" id="q" name="q" value="{{ search_query }}"
-             placeholder="Search titles, organizations, or locations"
+             placeholder="Search by title, organization, or location"
              autocomplete="off" enterkeyhint="search" maxlength="100">
+      <button type="button" class="search-clear" data-search-clear aria-label="Clear search" hidden>
+        <span aria-hidden="true">×</span>
+      </button>
       <button type="submit" class="button button-filled search-submit">Search</button>
     </div>
 
     <fieldset class="opportunity-skill-filters">
       <legend>Filter by skills</legend>
-      <p class="chip-hint">Show opportunities matching any selected skill.</p>
+      <p class="chip-hint">Choose one or more skills that interest you.</p>
       <div class="chip-cloud">
-        {% for skill in skills %}
+        {% for skill in skill_options %}
         <label class="chip-check">
           <input type="checkbox" name="skills" value="{{ skill }}"
                  {% if skill in selected_skills %}checked{% endif %}>
@@ -56,28 +88,32 @@
         <div class="field sort-field">
           <label for="sort">Sort by</label>
           <select id="sort" name="sort">
-            <option value="best"{% if sort == "best" %} selected{% endif %}>Best skill match</option>
-            <option value="nearest"{% if sort == "nearest" %} selected{% endif %}
-                    {% if not has_location %}disabled{% endif %}>Nearest</option>
-            <option value="soonest"{% if sort == "soonest" %} selected{% endif %}>Soonest</option>
+            {% for value, label in [
+              ("best", "Best skill match"),
+              ("closest", "Nearest"),
+              ("soonest", "Soonest")
+            ] %}
+            <option value="{{ value }}"{% if sort == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
           </select>
         </div>
         <div class="field sort-field">
           <label for="radius">Distance</label>
-          <select id="radius" name="radius" {% if not has_location %}disabled{% endif %}>
-            {% for value, label in [("0", "Any distance"), ("5", "Within 5 miles"), ("10", "Within 10 miles"), ("25", "Within 25 miles"), ("50", "Within 50 miles")] %}
+          <select id="radius" name="radius">
+            {% for value, label in [
+              ("5", "Within 5 miles"),
+              ("10", "Within 10 miles"),
+              ("25", "Within 25 miles"),
+              ("50", "Within 50 miles"),
+              ("0", "Any distance")
+            ] %}
             <option value="{{ value }}"{% if radius == value %} selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
       </div>
-      {% if not has_location %}
-      <p class="chip-hint location-filter-hint">
-        Add a location to your volunteer profile to sort or filter by distance.
-      </p>
-      {% endif %}
       <button type="submit" class="button button-filled button-small">Apply filters</button>
-      <a class="text-link" href="{{ url_for('opportunities') }}">Clear filters</a>
+      <a class="text-link" href="/opportunities">Clear filters</a>
     </div>
   </form>
 
@@ -86,63 +122,91 @@
 
     {% if opportunities %}
     <ol class="results-list">
-      {% for result in opportunities %}
-      {% set opportunity = result.opportunity %}
+      {% for o in opportunities %}
+      {% set top_pick = loop.first and sort == "best" %}
       <li class="result-item" style="--i: {{ [loop.index0, 8] | min }}">
-        <article class="card card--wide card--note result-card"
-                 aria-labelledby="result-{{ opportunity.id }}">
+        <article class="card card--wide card--note result-card{% if top_pick %} result-card--top{% endif %}"
+                 aria-labelledby="result-{{ o.id }}">
+          {% if top_pick %}
+          <p class="top-pick">
+            <svg class="top-pick-icon" aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
+            Top pick for you
+          </p>
+          {% endif %}
           <div class="result-main">
-            {{ event_tile(opportunity) }}
+            {{ event_tile(o) }}
             <div class="event-body">
               <div class="result-head">
-                <h3 class="event-title result-title" id="result-{{ opportunity.id }}">
-                  <a href="{{ url_for('opportunity_detail', opportunity_id=opportunity.id) }}">
-                    {{ opportunity.title }}
-                  </a>
+                <h3 class="event-title result-title" id="result-{{ o.id }}">
+                  <a href="/opportunities/{{ o.id }}">{{ o.title }}</a>
                 </h3>
+                {% if o.match_score is defined and o.match_score is not none %}
+                {% set score = o.match_score | round | int %}
+                <p class="match-badge match-badge--{{ 'high' if score >= 85 else ('mid' if score >= 70 else 'low') }}">
+                  <svg aria-hidden="true" focusable="false"><use href="#doodle-heart"></use></svg>
+                  {{ score }}% match
+                </p>
+                {% endif %}
               </div>
 
-              {% if opportunity.poster %}
-              <p class="result-org">{{ opportunity.poster }}</p>
-              {% endif %}
+              {% set org_name = o.org_name if o.org_name is defined else (o.poster if o.poster is defined and o.poster else "") %}
+              {% if org_name %}<p class="result-org">{{ org_name }}</p>{% endif %}
 
               <ul class="result-facts">
                 <li>
-                  <span>{{ fmt_date(opportunity.date) }}</span>
+                  {{ icon("calendar") }}
+                  <span>{{ fmt_date(o.date) }}{% if o.start_time is defined and o.start_time %} · {{ fmt_time(o.start_time) }}{% if o.end_time is defined and o.end_time %} – {{ fmt_time(o.end_time) }}{% endif %}{% endif %}</span>
                 </li>
                 <li>
-                  <span>{{ opportunity.location }}</span>
+                  {{ icon("pin") }}
+                  <span>{{ o.location }}{% if o.distance_miles is defined and o.distance_miles is not none %} · {{ num(o.distance_miles | round(1)) }} {{ "mile" if o.distance_miles == 1 else "miles" }} away{% endif %}</span>
                 </li>
-                {% if opportunity.capacity %}
+                {% if o.spots_left is defined and o.spots_left is not none %}
                 <li>
-                  <span>{{ opportunity.capacity }}
-                    {{ "volunteer" if opportunity.capacity == 1 else "volunteers" }} needed
-                  </span>
+                  {{ icon("people") }}
+                  {% if o.spots_left <= 0 %}
+                  <span class="badge badge--full">Full</span>
+                  {% elif o.spots_left <= 3 %}
+                  <span class="badge badge--few">Only {{ o.spots_left }} {{ "spot" if o.spots_left == 1 else "spots" }} left</span>
+                  {% else %}
+                  <span>{{ o.spots_left }} spots left</span>
+                  {% endif %}
                 </li>
+                {% elif o.capacity is defined and o.capacity %}
+                <li>{{ icon("people") }}<span>{{ o.capacity }} {{ "volunteer" if o.capacity == 1 else "volunteers" }} needed</span></li>
                 {% endif %}
-                {% if result.distance_miles is not none %}
-                <li>
-                  <span>{{ "%.1f" | format(result.distance_miles) }} miles away</span>
-                </li>
+                {% if o.hours is defined and o.hours is not none %}
+                <li>{{ icon("clock") }}<span>Earn {{ num(o.hours) }} {{ "hour" if o.hours == 1 else "hours" }}</span></li>
                 {% endif %}
               </ul>
 
-              <p class="event-description">{{ opportunity.description | truncate(180) }}</p>
-              {% if opportunity.skills %}
+              <p class="event-description">{{ o.description | truncate(180) }}</p>
+              {% if o.skills is defined and o.skills %}
               <div class="opportunity-tags" aria-label="Opportunity skills">
-                {% for skill in opportunity.skills.split(",") %}
-                {% set skill = skill | trim %}
-                {% if skill %}
-                <span class="opportunity-tag{% if skill | lower in result.matching_skills %} opportunity-tag--match{% endif %}">
-                  {{ skill }}
-                </span>
+                {% for skill in o.skills.split(",") %}
+                {% if skill | trim %}
+                <span class="opportunity-tag">{{ skill | trim }}</span>
                 {% endif %}
                 {% endfor %}
               </div>
               {% endif %}
-              <a class="button button-filled button-small result-details"
-                 href="{{ url_for('opportunity_detail', opportunity_id=opportunity.id) }}">
-                View details<span class="visually-hidden">: {{ opportunity.title }}</span>
+
+              {% if o.match_reasons is defined and o.match_reasons %}
+              <div class="reasons">
+                <p class="reasons-title">Why this fits you</p>
+                <ul class="reasons-list">
+                  {% for reason in o.match_reasons[:3] %}
+                  <li class="reason-chip">
+                    <svg aria-hidden="true" focusable="false"><use href="#doodle-sparkle"></use></svg>
+                    {{ reason }}
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+
+              <a class="button button-filled button-small result-details" href="/opportunities/{{ o.id }}">
+                View details<span class="visually-hidden">: {{ o.title }}</span>
               </a>
             </div>
           </div>
@@ -152,14 +216,16 @@
     </ol>
     {% else %}
     <div class="card card--wide card--note empty-state results-empty">
+      <svg class="doodle empty-doodle" aria-hidden="true" focusable="false"><use href="#doodle-sprout"></use></svg>
       <p class="results-empty-title">No opportunities found.</p>
-      {% if search_query or selected_skills or radius != "0" %}
-      <p>Try changing your search, selected skills, or distance.</p>
-      {% else %}
-      <p>There aren’t any opportunities posted yet. Please check back later.</p>
-      {% endif %}
+      <p>Try changing your search or filters.</p>
+      <div class="results-empty-actions">
+        <a class="button button-small button-outline" href="/opportunities">Clear filters</a>
+      </div>
     </div>
     {% endif %}
   </section>
 </main>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% endblock %}

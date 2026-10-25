@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 import os
 from datetime import datetime
-from math import asin, cos, radians, sin, sqrt
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
-from sqlalchemy import or_, text
+from sqlalchemy import text
 from extensions import db
+from geopy.distance import geodesic
 
 SKILLS = (
     "Animal Care",
@@ -54,134 +54,33 @@ def home():
     return render_template("index.html")
 
 
-@app.route("/opportunities")
+@app.route("/opportunities",methods=["GET","POST"])
 def opportunities():
-    search_query = request.args.get("q", "").strip()
-    sort = request.args.get("sort", "best")
-    if sort not in {"best", "nearest", "soonest"}:
-        sort = "best"
+    #if we're not signed in
+    if session.get("username") is None:
+        return redirect(url_for("home"))
+    #if we're not a volunteer
+    if User.query.filter_by(username=session["username"]).first().volunteer == False:
+        return redirect(url_for("organization_dashboard"))
 
-    username = session.get("username")
-    user = db.session.get(User, username) if username else None
-    if user is not None and not user.volunteer:
-        user = None
-    has_location = bool(
-        user and user.latitude is not None and user.longitude is not None
-    )
+    if request.method == "POST":
+        #search text
+        query = request.form.get("q", "").strip()
+        #skills required
+        selected_skills = request.form.getlist("skills")
+        #whether to sort by best match,nearest,soonest
+        sort_by = request.form.get("sort", "best")
+        #biggest acceptable radius
+        radius = request.form.get("radius", "10")
 
-    if "filters" in request.args:
-        selected_skills = [
-            skill for skill in request.args.getlist("skills")
-            if skill in SKILLS
-        ]
-    elif user and user.skills:
-        selected_skills = [
-            skill.strip() for skill in user.skills.split(",")
-            if skill.strip() in SKILLS
-        ]
+    all_opportunities = Opportunity.query.all()
+    userSkills = User.query.filter_by(username=session["username"]).first().skills
+    if userSkills == "":
+        userSkills = []
     else:
-        selected_skills = []
-
-    radius_options = {"0", "5", "10", "25", "50"}
-    radius = request.args.get("radius", "0")
-    if radius not in radius_options:
-        radius = "0"
-    if not has_location:
-        radius = "0"
-
-    query = Opportunity.query
-    if search_query:
-        search_pattern = f"%{search_query}%"
-        query = query.filter(or_(
-            Opportunity.title.ilike(search_pattern),
-            Opportunity.description.ilike(search_pattern),
-            Opportunity.location.ilike(search_pattern),
-            Opportunity.poster.ilike(search_pattern),
-        ))
-
-    selected_skill_set = {skill.casefold() for skill in selected_skills}
-    opportunities_with_match = []
-    for opportunity in query.all():
-        opportunity_skills = {
-            skill.strip().casefold()
-            for skill in (opportunity.skills or "").split(",")
-            if skill.strip()
-        }
-        matching_skills = selected_skill_set & opportunity_skills
-
-        if selected_skill_set and not matching_skills:
-            continue
-
-        distance_miles = None
-        if (
-            user
-            and user.latitude is not None
-            and user.longitude is not None
-            and opportunity.latitude is not None
-            and opportunity.longitude is not None
-        ):
-            latitude_delta = radians(opportunity.latitude - user.latitude)
-            longitude_delta = radians(opportunity.longitude - user.longitude)
-            haversine = (
-                sin(latitude_delta / 2) ** 2
-                + cos(radians(user.latitude))
-                * cos(radians(opportunity.latitude))
-                * sin(longitude_delta / 2) ** 2
-            )
-            distance_miles = (
-                3958.8 * 2 * asin(sqrt(min(1, haversine)))
-            )
-
-        if radius != "0":
-            if distance_miles is None or distance_miles > int(radius):
-                continue
-
-        opportunities_with_match.append({
-            "opportunity": opportunity,
-            "matching_skill_count": len(matching_skills),
-            "matching_skills": matching_skills,
-            "distance_miles": distance_miles,
-        })
-
-    if sort == "nearest":
-        opportunities_with_match.sort(
-            key=lambda item: (
-                item["distance_miles"] is None,
-                item["distance_miles"] if item["distance_miles"] is not None else 0,
-                item["opportunity"].date,
-            )
-        )
-    elif sort == "soonest":
-        opportunities_with_match.sort(
-            key=lambda item: item["opportunity"].date
-        )
-    else:
-        opportunities_with_match.sort(
-            key=lambda item: (
-                -item["matching_skill_count"],
-                item["opportunity"].date,
-            )
-        )
-
-    return render_template(
-        "opportunities.html",
-        opportunities=opportunities_with_match,
-        search_query=search_query,
-        sort=sort,
-        skills=SKILLS,
-        selected_skills=selected_skills,
-        radius=radius,
-        has_location=has_location,
-    )
-
-@app.route("/opportunities/<int:opportunity_id>")
-def opportunity_detail(opportunity_id):
-    # Read-only for now. The detail page also has an "Add to my list" form that posts to
-    # /opportunities/<id>/add; that route doesn't exist yet (the backend must add it, and pass
-    # org_name, spots_left, in_list, and the other optional fields the template reads).
-    opportunity = db.get_or_404(Opportunity, opportunity_id)
-    return render_template("opportunity_detail.html", opportunity=opportunity)
-
+        userSkills=userSkills.split(",")
+    print(userSkills)
+    return render_template("opportunities.html",opportunities=all_opportunities)
 @app.route("/logout")
 def logout():
     session.clear()
@@ -190,33 +89,13 @@ def logout():
 @app.route("/dashboard")
 def dashboard():
     username = session.get("username")
-    if username is None:
+    if username == None:
         return redirect(url_for("login"))
-
     user = db.session.get(User, username)
-    if user is None:
-        session.clear()
-        return redirect(url_for("login"))
     if not user.volunteer:
         return redirect(url_for("organization_dashboard"))
-
-    opportunity_ids = []
-    for value in (user.opportunity_id or "").split(","):
-        value = value.strip()
-        if value.isdigit():
-            opportunity_ids.append(int(value))
-
-    if opportunity_ids:
-        signups = (
-            Opportunity.query
-            .filter(Opportunity.id.in_(opportunity_ids))
-            .order_by(Opportunity.date)
-            .all()
-        )
-    else:
-        signups = []
-
-    return render_template("dashboard.html", user=user, signups=signups)
+    #signups=[] needs to become the opportunities_id with all the events they signed up for later
+    return render_template("dashboard.html",user=user,signup=[])
 
 @app.route("/login",methods=["GET","POST"])
 def login():
@@ -232,8 +111,7 @@ def login():
             else:
                 return redirect(url_for("organization_dashboard"))
         else:
-            # The login page shows flashed messages.
-            flash("Invalid username or password.")
+            print("bad username or password")
             return redirect(url_for("login"))
     return render_template("login.html")
 
@@ -245,23 +123,6 @@ def signup():
         if request.form.get("volunteer") == "yes":
             volunteer = True
             name = request.form.get("name")
-            try:
-                latitude = float(request.form["latitude"])
-                longitude = float(request.form["longitude"])
-            except (KeyError, ValueError):
-                return render_template(
-                    "signup.html",
-                    skills=SKILLS,
-                    error="We couldn't determine coordinates from that ZIP code. Please try again.",
-                ), 400
-
-            if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
-                return render_template(
-                    "signup.html",
-                    skills=SKILLS,
-                    error="The location lookup returned invalid coordinates. Please try again.",
-                ), 400
-
             selected_skills = ", ".join(
                 skill for skill in SKILLS
                 if skill in request.form.getlist("skills")
@@ -269,8 +130,6 @@ def signup():
         else:
             volunteer = False
             name = ""
-            latitude = None
-            longitude = None
             selected_skills = ""
         new_user = User(
             username=username,
@@ -279,9 +138,7 @@ def signup():
             password=password,
             volunteer=volunteer,
             opportunity_id="",
-            name=name,
-            latitude=latitude,
-            longitude=longitude,
+            name = name
         )
         db.session.add(new_user)
         db.session.commit()
@@ -295,6 +152,11 @@ def signup():
 
 @app.route("/organization_dashboard",methods=["GET","POST"])
 def organization_dashboard():
+    if session.get("username") is None:
+        return redirect(url_for("home"))
+    if User.query.filter_by(username=session["username"]).first().volunteer:
+        all_opportunities = Opportunity.query.all()
+        return redirect(url_for("opportunities",opportunities=all_opportunities))
     username = session.get("username")
     if username is None:
         return redirect(url_for("login"))
@@ -315,8 +177,6 @@ def organization_dashboard():
             skills=request.form["skills"],
             capacity=int(request.form["capacity"]),
             poster=username,
-            longitude=request.form["longitude"],
-            latitude=request.form["latitude"]
         )
         db.session.add(new_opportunity)
         db.session.commit()
@@ -329,5 +189,69 @@ def organization_dashboard():
     )
 
 if __name__ == "__main__":
-    # Port 5000 is taken on this Mac (AirPlay Receiver), so run on 5001.
-    app.run(debug=True, port=5001)
+    app.run(debug=True)
+
+def sortByDistance(user):
+    sortedList = []
+    oppList = Opportunity.query.all()
+    oppDist = []
+    indexList = []
+    userCoord = (user.longitude, user.latitude)
+
+    for i in range(len(oppList)):
+        indexList.append(i)
+        oppDist.append(geodisc(userCoord, (oppList[i].longitude, oppList[i].latitude)).miles)
+
+    i = 0
+    n = 0
+    while i < len(oppList):
+        for j in range(len(oppList)):
+            if oppDist[j] < oppDist[i]:
+                n = indexList[i]
+                indexList[i] = indexList[j]
+                indexList[j] = n
+                i += 1
+                break
+
+            i += 1
+
+    for i in range(len(oppList)):
+        sortedList.append(oppList[indexList[i]])
+
+    return sortedList 
+
+def sortBySkill(skillList, oppList):
+    sortedList = []
+    indexList = []
+    recSkillsList = []  #a list of skills recommended by the opportunity of the same index
+    maxCount = 0
+
+    for i in range(len(oppList)):
+        recSkillsList.append(oppList[i].get_skills().split(", "))
+        indexList.append(i)
+
+    countList = [0] * len(recSkillsList)
+
+    for i in range(len(skillList)):
+        for j in range(len(recSkillsList)):
+            for k in range(len(recSkillsList[j])):
+                if recSkillsList[j][k] == skillList[i]:
+                    countList[j] += 1
+                    if maxCount < countList[j]:
+                        maxCount = countList[j]
+                    break
+
+    n = 0
+    for i in range(maxCount, 0, -1):
+        for j in range(len(countList)):
+            if countList[indexList[j]] == i:
+                n = indexList[j]
+                del indexList[j]
+                indexList.insert(0, n)
+
+    for i in range(len(indexList)):
+        sortedList.append(oppList[indexList[i]])
+
+    sortedList.reverse()
+    return sortedList
+
