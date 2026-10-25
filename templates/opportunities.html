@@ -4,7 +4,7 @@
 {% set search_query = args.get("q", "") %}
 {% set sort = args.get("sort", "best") %}
 {% set radius = args.get("radius", "10") %}
-{% set selected_skills = args.getlist("skills") %}
+{% set selected_skills = args.getlist("skills") if request.method == "POST" else (profile_skills | default([])) %}
 {% set skill_options = [
   "Animal Care", "Childcare", "Communication", "Compassion",
   "Customer Service", "Environmental Care", "Environmental Knowledge",

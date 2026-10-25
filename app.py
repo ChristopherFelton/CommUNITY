@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 import os
 from math import isfinite
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from sqlalchemy import text
@@ -94,7 +94,7 @@ def sortByDistance(user, radius, oppList):
     for i in range(len(oppList)):
         distance = geodesic(userCoord, (oppList[i].latitude, oppList[i].longitude)).miles
         indexList.append(i)
-        if datetime.now() < oppList[i].date and oppList[i].capacity != 0:
+        if datetime.now() < oppList[i].date and oppList[i].capacity > 0:
             if(radius>0):
                 if(distance <= radius):
                     oppDist.append(distance)
@@ -194,13 +194,27 @@ def opportunities():
         if(sort_by == "soonest"):
             return render_template("opportunities.html",opportunities=timeArr)
    
-    userSkills = User.query.filter_by(username=session["username"]).first().skills
+    available_opportunities = [
+        opportunity
+        for opportunity in all_opportunities
+        if opportunity.date > datetime.now() and opportunity.capacity > 0
+    ]
+    userSkills = user.skills
+    profile_skills = userSkills.split(", ") if userSkills else []
     if userSkills == "":
-        return render_template("opportunities.html",opportunities=all_opportunities)
+        return render_template(
+            "opportunities.html",
+            opportunities=available_opportunities,
+            profile_skills=profile_skills,
+        )
     else:
         userSkills=userSkills.split(", ")
-        bestArr = sortBySkill(userSkills, sortByDistance(User.query.filter_by(username=session["username"]).first(), 0, all_opportunities))
-        return render_template("opportunities.html",opportunities=bestArr)
+        bestArr = sortBySkill(userSkills, available_opportunities)
+        return render_template(
+            "opportunities.html",
+            opportunities=bestArr,
+            profile_skills=profile_skills,
+        )
 
 @app.route("/logout")
 def logout():
@@ -367,5 +381,35 @@ def add(opportunity_id):
 
     db.session.commit()
     return redirect(url_for("opportunity_detail",opportunity_id=opportunity_id))
+
+@app.route("/opportunities/<int:opportunity_id>/unregister", methods=["POST"])
+def unregister(opportunity_id):
+    username = session.get("username")
+    if username is None:
+        flash("Please sign in to unregister from an opportunity.")
+        return redirect(url_for("login"))
+
+    user = db.session.get(User, username)
+    if user is None:
+        session.clear()
+        flash("Your session has expired. Please sign in again.")
+        return redirect(url_for("login"))
+    if not user.volunteer:
+        flash("Only volunteers can unregister from opportunities.")
+        return redirect(url_for("organization_dashboard"))
+
+    signup = Signup.query.filter_by(
+        volunteer_username=username,
+        opportunity_id=opportunity_id,
+    ).first()
+    if signup is None:
+        flash("You aren't registered for that opportunity.")
+        return redirect(url_for("dashboard"))
+
+    db.session.delete(signup)
+    db.session.commit()
+    flash("You have been unregistered from the opportunity.")
+    return redirect(url_for("dashboard"))
+
 if __name__ == "__main__":
     app.run(debug=True)
