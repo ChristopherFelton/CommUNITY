@@ -38,6 +38,7 @@ load_dotenv()
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
+app.config["GOOGLE_MAPS_API_KEY"] = os.environ.get("GOOGLE_MAPS_API_KEY", "")
 
 db.init_app(app)
 
@@ -92,6 +93,23 @@ def signup():
         if request.form.get("volunteer") == "yes":
             volunteer = True
             name = request.form.get("name")
+            try:
+                latitude = float(request.form["latitude"])
+                longitude = float(request.form["longitude"])
+            except (KeyError, ValueError):
+                return render_template(
+                    "signup.html",
+                    skills=SKILLS,
+                    error="We couldn't determine coordinates from that ZIP code. Please try again.",
+                ), 400
+
+            if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+                return render_template(
+                    "signup.html",
+                    skills=SKILLS,
+                    error="The location lookup returned invalid coordinates. Please try again.",
+                ), 400
+
             selected_skills = ", ".join(
                 skill for skill in SKILLS
                 if skill in request.form.getlist("skills")
@@ -99,6 +117,8 @@ def signup():
         else:
             volunteer = False
             name = ""
+            latitude = None
+            longitude = None
             selected_skills = ""
         new_user = User(
             username=username,
@@ -107,7 +127,9 @@ def signup():
             password=password,
             volunteer=volunteer,
             opportunity_id="",
-            name = name
+            name=name,
+            latitude=latitude,
+            longitude=longitude,
         )
         db.session.add(new_user)
         db.session.commit()
@@ -133,17 +155,7 @@ def organization_dashboard():
         return redirect(url_for("opportunities"))
 
     if request.method == "POST":
-        opportunity_ids = db.session.query(Opportunity.id).all()
-        existing_numbers = [
-            int(opportunity_id.removeprefix("CS-"))
-            for (opportunity_id,) in opportunity_ids
-            if opportunity_id.startswith("CS-")
-            and opportunity_id.removeprefix("CS-").isdigit()
-        ]
-        opportunity_id = f"CS-{max(existing_numbers, default=0) + 1}"
-
         new_opportunity = Opportunity(
-            id=opportunity_id,
             title=request.form["title"],
             date=datetime.strptime(request.form["date"], "%Y-%m-%d"),
             description=request.form["description"],
@@ -151,6 +163,8 @@ def organization_dashboard():
             skills=request.form["skills"],
             capacity=int(request.form["capacity"]),
             poster=username,
+            longitude=request.form["longitude"],
+            latitude=request.form["latitude"]
         )
         db.session.add(new_opportunity)
         db.session.commit()

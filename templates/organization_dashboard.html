@@ -1,4 +1,6 @@
+
 <h1>My opportunities</h1>
+
 {% for opportunity in opportunities %}
     <div>
         <h2>{{ opportunity.title }}</h2>
@@ -10,42 +12,444 @@
 {% else %}
     <p>No opportunities found.</p>
 {% endfor %}
+
 <div id="content-area">
-    <button id="createOpportunity">Create Volunteering Opportunity</button>
-   
+    <button type="button" id="createOpportunity">
+        Create Volunteering Opportunity
+    </button>
 </div>
 
+<style>
+    #map {
+        height: 350px;
+        width: 100%;
+        margin: 12px 0;
+        border-radius: 8px;
+    }
+
+    #address-search {
+        margin: 12px 0;
+    }
+
+    gmp-place-autocomplete {
+        width: 100%;
+    }
+
+    .form-field {
+        display: block;
+        margin: 12px 0;
+    }
+
+    .form-field input {
+        display: block;
+        width: 100%;
+        max-width: 500px;
+        box-sizing: border-box;
+        padding: 8px;
+    }
+</style>
+
+
 <script>
-    const makeOpportunityButton = document.getElementById("createOpportunity");
-    const contentArea = document.getElementById("content-area");
+    const makeOpportunityButton =
+        document.getElementById("createOpportunity");
+
+    const contentArea =
+        document.getElementById("content-area");
+
+    let mapsScriptLoading = false;
+    let mapsInitialized = false;
+
     makeOpportunityButton.addEventListener("click", function () {
         contentArea.innerHTML = `
             <h1>Create volunteering opportunity</h1>
+
             <form
                 id="opportunity-form"
                 action="{{ url_for('organization_dashboard') }}"
                 method="POST"
             >
-                <label for="title">Title</label>
-                <input type="text" id="title" name="title" required>
+                <label class="form-field">
+                    Title
+                    <input type="text" name="title" required>
+                </label>
 
-                <label for="date">Date</label>
-                <input type="date" id="date" name="date" required>
+                <label class="form-field">
+                    Date
+                    <input type="date" name="date" required>
+                </label>
 
-                <label for="description">Description</label>
-                <input type="text" id="description" name="description" required>
+                <label class="form-field">
+                    Description
+                    <input type="text" name="description" required>
+                </label>
 
-                <label for="location">Location</label>
-                <input type="text" id="location" name="location" required>
+                <label class="form-field">
+                    Location / address
+                    <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        placeholder="Search for an address below"
+                        required
+                        readonly
+                    >
+                </label>
 
-                <label for="skills">Skills</label>
-                <input type="text" id="skills" name="skills" required>
+                <h3>Select the event location</h3>
+                <p>
+                    Search for an address, select a suggestion,
+                    or click the map and drag the pin.
+                    The address will update automatically.
+                </p>
 
-                <label for="capacity">Capacity</label>
-                <input type="number" id="capacity" name="capacity" step="1" required>
+                <div id="address-search"></div>
+                <div id="map"></div>
 
-                <button type="submit">Create Opportunity</button>
+                <p id="coordinate-status" aria-live="polite">
+                    Search for an address or click the map.
+                </p>
+
+                <input
+                    type="hidden"
+                    id="latitude"
+                    name="latitude"
+                >
+
+                <input
+                    type="hidden"
+                    id="longitude"
+                    name="longitude"
+                >
+
+                <label class="form-field">
+                    Skills (comma-separated)
+                    <input
+                        type="text"
+                        name="skills"
+                        placeholder="Tutoring, Python, First aid"
+                        required
+                    >
+                </label>
+
+                <label class="form-field">
+                    Capacity
+                    <input
+                        type="number"
+                        name="capacity"
+                        min="1"
+                        step="1"
+                        required
+                    >
+                </label>
+
+                <button type="submit">
+                    Create Opportunity
+                </button>
             </form>
         `;
+
+        loadGoogleMaps();
     });
+
+    function loadGoogleMaps() {
+        if (window.google?.maps) {
+            initLocationPicker();
+            return;
+        }
+
+        if (mapsScriptLoading) {
+            return;
+        }
+
+        mapsScriptLoading = true;
+
+        const script = document.createElement("script");
+
+        script.src =
+            "https://maps.googleapis.com/maps/api/js" +
+            "?key={{ config['GOOGLE_MAPS_API_KEY']|urlencode }}" +
+            "&callback=initLocationPicker" +
+            "&loading=async" +
+            "&v=weekly";
+
+        script.async = true;
+
+        script.onerror = function () {
+            mapsScriptLoading = false;
+            alert(
+                "Google Maps failed to load. Check your API key, " +
+                "enabled APIs, billing settings, and browser console."
+            );
+        };
+
+        document.head.appendChild(script);
+    }
+
+    // Google calls this after the Maps JavaScript API loads.
+    window.initLocationPicker = async function () {
+        const [
+            { Map },
+            { AdvancedMarkerElement },
+            { PlaceAutocompleteElement },
+            { Geocoder }
+        ] = await Promise.all([
+            google.maps.importLibrary("maps"),
+            google.maps.importLibrary("marker"),
+            google.maps.importLibrary("places"),
+            google.maps.importLibrary("geocoding")
+        ]);
+
+        const mapElement = document.getElementById("map");
+        const searchElement = document.getElementById("address-search");
+
+        // The user may have navigated away from the form.
+        if (!mapElement || !searchElement) {
+            return;
+        }
+
+        // Avoid adding duplicate maps or listeners to one form.
+        if (mapsInitialized) {
+            return;
+        }
+
+        mapsInitialized = true;
+
+        const startingLocation = {
+            lat: 40.912,
+            lng: -73.123
+        };
+
+        const map = new Map(mapElement, {
+            center: startingLocation,
+            zoom: 12,
+            mapId: "DEMO_MAP_ID"
+        });
+
+        const marker = new AdvancedMarkerElement({
+            map: map,
+            position: null,
+            gmpDraggable: true,
+            title: "Event location"
+        });
+
+        const geocoder = new Geocoder();
+
+        const locationInput =
+            document.getElementById("location");
+
+        const latitudeInput =
+            document.getElementById("latitude");
+
+        const longitudeInput =
+            document.getElementById("longitude");
+
+        const status =
+            document.getElementById("coordinate-status");
+
+        const form =
+            document.getElementById("opportunity-form");
+
+        let lookupInProgress = false;
+        let lookupVersion = 0;
+        let addressFound = false;
+
+        function getCoordinates(position) {
+            return {
+                lat: typeof position.lat === "function"
+                    ? position.lat()
+                    : position.lat,
+                lng: typeof position.lng === "function"
+                    ? position.lng()
+                    : position.lng
+            };
+        }
+
+        function updateCoordinates(position) {
+            const coords = getCoordinates(position);
+
+            latitudeInput.value = coords.lat;
+            longitudeInput.value = coords.lng;
+        }
+
+        async function updateAddressFromPin(position) {
+            const currentLookup = ++lookupVersion;
+            const coords = getCoordinates(position);
+
+            // Clear old data so an outdated address can't be submitted.
+            lookupInProgress = true;
+            addressFound = false;
+            locationInput.value = "";
+            updateCoordinates(coords);
+
+            status.textContent = "Looking up address...";
+
+            try {
+                const response = await geocoder.geocode({
+                    location: coords
+                });
+
+                // Ignore results from an older lookup.
+                if (currentLookup !== lookupVersion) {
+                    return;
+                }
+
+                const results = response.results || [];
+
+                // Prefer a street address when one is available.
+                const bestResult =
+                    results.find(result =>
+                        result.types.includes("street_address")
+                    ) ||
+                    results.find(result =>
+                        result.types.includes("premise")
+                    ) ||
+                    results.find(result =>
+                        result.types.includes("establishment")
+                    ) ||
+                    results.find(result =>
+                        result.types.includes("point_of_interest")
+                    ) ||
+                    results[0];
+
+                if (bestResult) {
+                    locationInput.value = bestResult.formatted_address;
+                    addressFound = true;
+
+                    status.textContent =
+                        "Address found: " + bestResult.formatted_address;
+                } else {
+                    status.textContent =
+                        "No address found here. Try another location.";
+                }
+            } catch (error) {
+                if (currentLookup !== lookupVersion) {
+                    return;
+                }
+
+                console.error("Reverse geocoding failed:", error);
+
+                status.textContent =
+                    "Address lookup failed. Try another location.";
+            } finally {
+                if (currentLookup === lookupVersion) {
+                    lookupInProgress = false;
+                }
+            }
+        }
+
+        // Address autocomplete.
+        const autocomplete = new PlaceAutocompleteElement();
+        autocomplete.placeholder = "Search for an address or place";
+        searchElement.appendChild(autocomplete);
+
+        autocomplete.addEventListener("gmp-select", async (event) => {
+            const currentLookup = ++lookupVersion;
+
+            lookupInProgress = true;
+            addressFound = false;
+            locationInput.value = "";
+            latitudeInput.value = "";
+            longitudeInput.value = "";
+            status.textContent = "Loading selected address...";
+
+            try {
+                const place = event.placePrediction.toPlace();
+
+                await place.fetchFields({
+                    fields: [
+                        "formattedAddress",
+                        "location",
+                        "displayName"
+                    ]
+                });
+
+                if (currentLookup !== lookupVersion) {
+                    return;
+                }
+
+                if (!place.location) {
+                    status.textContent =
+                        "That result has no coordinates. Select another.";
+                    return;
+                }
+
+                marker.position = place.location;
+                map.setCenter(place.location);
+                map.setZoom(16);
+
+                locationInput.value =
+                    place.formattedAddress ||
+                    place.displayName ||
+                    "";
+
+                updateCoordinates(place.location);
+
+                if (locationInput.value) {
+                    addressFound = true;
+                    status.textContent =
+                        "Selected: " + locationInput.value;
+                } else {
+                    // Fall back to reverse geocoding if no address
+                    // was provided by the selected place.
+                    await updateAddressFromPin(place.location);
+                }
+            } catch (error) {
+                if (currentLookup === lookupVersion) {
+                    console.error("Place lookup failed:", error);
+                    status.textContent =
+                        "Couldn't load that place. Try another result.";
+                }
+            } finally {
+                if (currentLookup === lookupVersion) {
+                    lookupInProgress = false;
+                }
+            }
+        });
+
+        // Clicking the map places or moves the pin.
+        map.addListener("click", (event) => {
+            if (!event.latLng) {
+                return;
+            }
+
+            marker.position = event.latLng;
+            updateAddressFromPin(event.latLng);
+        });
+
+        // Dragging the pin updates the address.
+        marker.addEventListener("gmp-dragend", () => {
+            if (marker.position) {
+                updateAddressFromPin(marker.position);
+            }
+        });
+
+        // Don't allow submission before a valid lookup completes.
+        form.addEventListener("submit", (event) => {
+            const lat = Number(latitudeInput.value);
+            const lng = Number(longitudeInput.value);
+
+            const validCoordinates =
+                latitudeInput.value !== "" &&
+                longitudeInput.value !== "" &&
+                Number.isFinite(lat) &&
+                Number.isFinite(lng) &&
+                lat >= -90 && lat <= 90 &&
+                lng >= -180 && lng <= 180;
+
+            if (
+                lookupInProgress ||
+                !addressFound ||
+                !locationInput.value.trim() ||
+                !validCoordinates
+            ) {
+                event.preventDefault();
+
+                alert(
+                    "Please select a location and wait for its " +
+                    "address to be confirmed before submitting."
+                );
+            }
+        });
+    };
 </script>

@@ -1,7 +1,7 @@
 
 <h1>Create an Account</h1>
 
-<form action="{{ url_for('signup') }}" method="POST">
+<form id="signup-form" action="{{ url_for('signup') }}" method="POST">
     <label for="username">Username</label>
     <input
         type="text"
@@ -25,6 +25,21 @@
             id="name"
             name="name"
         >
+        <label for="zip_code">ZIP code (United States)</label>
+        <input
+            type="text"
+            id="zip_code"
+            autocomplete="postal-code"
+            inputmode="numeric"
+            pattern="[0-9]{5}(-[0-9]{4})?"
+            maxlength="10"
+        >
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
+        <p id="location-status" aria-live="polite">
+            Google Maps will process your ZIP code to find approximate coordinates.
+            We save the coordinates, not the ZIP code.
+        </p>
         <fieldset>
             <legend>Select your skills</legend>
             {% for skill in skills %}
@@ -48,15 +63,119 @@
     <button type="submit">Sign Up</button>
 </form>
 
+{% if error %}
+    <p role="alert">{{ error }}</p>
+{% endif %}
+
 <script>
     const volunteerCheckbox = document.getElementById("volunteer");
     const volunteerFields = document.getElementById("volunteer-fields");
     const nameInput = document.getElementById("name");
+    const zipCodeInput = document.getElementById("zip_code");
+    const signupForm = document.getElementById("signup-form");
+    const locationStatus = document.getElementById("location-status");
+    const googleMapsApiKey =
+        {{ config["GOOGLE_MAPS_API_KEY"]|tojson }};
+    let geocoderPromise;
+    let signupInProgress = false;
 
     function updateVolunteerFields() {
         volunteerFields.hidden = !volunteerCheckbox.checked;
         nameInput.required = volunteerCheckbox.checked;
+        zipCodeInput.required = volunteerCheckbox.checked;
     }
+
+    function loadGeocoder() {
+        if (!geocoderPromise) {
+            geocoderPromise = new Promise((resolve, reject) => {
+                const initializeGeocoder = async () => {
+                    try {
+                        if (typeof window.google?.maps?.importLibrary !== "function") {
+                            throw new Error(
+                                "Google Maps did not initialize. Check the API key, " +
+                                "API access, billing, and browser referrer restrictions."
+                            );
+                        }
+                        const { Geocoder } =
+                            await google.maps.importLibrary("geocoding");
+                        resolve(new Geocoder());
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+
+                if (!googleMapsApiKey) {
+                    reject(new Error(
+                        "Set GOOGLE_MAPS_API_KEY in the application environment."
+                    ));
+                    return;
+                }
+
+                if (window.google?.maps) {
+                    initializeGeocoder();
+                    return;
+                }
+
+                const script = document.createElement("script");
+                script.src =
+                    "https://maps.googleapis.com/maps/api/js" +
+                    "?key={{ config['GOOGLE_MAPS_API_KEY']|urlencode }}" +
+                    "&loading=async&v=weekly";
+                script.async = true;
+                script.onload = initializeGeocoder;
+                script.onerror = () =>
+                    reject(new Error("Google Maps failed to load."));
+                document.head.appendChild(script);
+            });
+        }
+
+        return geocoderPromise;
+    }
+
+    signupForm.addEventListener("submit", async (event) => {
+        if (!volunteerCheckbox.checked || signupInProgress) {
+            if (signupInProgress) {
+                event.preventDefault();
+            }
+            return;
+        }
+
+        event.preventDefault();
+        signupInProgress = true;
+        locationStatus.textContent = "Looking up your ZIP code...";
+
+        try {
+            const geocoder = await loadGeocoder();
+            const response = await geocoder.geocode({
+                address: zipCodeInput.value.trim(),
+                componentRestrictions: { country: "US" },
+            });
+            const postalCodeResult = response.results.find((result) =>
+                result.types.includes("postal_code")
+            );
+
+            if (!postalCodeResult) {
+                throw new Error("No matching U.S. ZIP code was found.");
+            }
+
+            const latitude =
+                document.getElementById("latitude");
+            const longitude =
+                document.getElementById("longitude");
+            latitude.value = postalCodeResult.geometry.location.lat();
+            longitude.value = postalCodeResult.geometry.location.lng();
+            HTMLFormElement.prototype.submit.call(signupForm);
+        } catch (error) {
+            console.error("ZIP code geocoding failed:", error);
+            locationStatus.textContent = error.message.includes(
+                "Set GOOGLE_MAPS_API_KEY"
+            )
+                ? "ZIP lookup isn't configured yet. Set GOOGLE_MAPS_API_KEY in the app environment."
+                : "We couldn't look up that ZIP code. Check the ZIP and Google Maps API setup, then try again.";
+            geocoderPromise = null;
+            signupInProgress = false;
+        }
+    });
 
     volunteerCheckbox.addEventListener("change", updateVolunteerFields);
     updateVolunteerFields();
