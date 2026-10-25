@@ -181,14 +181,32 @@ def opportunities():
         sort_by = request.form.get("sort", "best")
         #biggest acceptable radius
         radius = request.form.get("radius", "10")
-        if query != "":
-            distArr = sortByDistance(User.query.filter_by(username=session["username"]).first(), int(radius), searchBar(query, all_opportunities))
+        keyword_results = (
+            searchBar(query, all_opportunities)
+            if query
+            else all_opportunities
+        )
+        distance_results = sortByDistance(user, int(radius), keyword_results)
+
+        if selected_skills:
+            selected_skill_set = set(selected_skills)
+            filtered_opportunities = [
+                opportunity
+                for opportunity in distance_results
+                if selected_skill_set.intersection(
+                    skill.strip() for skill in opportunity.skills.split(",")
+                )
+            ]
         else:
-            distArr = sortByDistance(User.query.filter_by(username=session["username"]).first(), int(radius), all_opportunities)
-        bestArr = sortBySkill(selected_skills, distArr)
-        timeArr = sortByTime(distArr)
+            filtered_opportunities = distance_results
+
+        bestArr = sortBySkill(selected_skills, filtered_opportunities)
+        timeArr = sortByTime(filtered_opportunities)
         if(sort_by == "nearest"):
-            return render_template("opportunities.html",opportunities=distArr)
+            return render_template(
+                "opportunities.html",
+                opportunities=filtered_opportunities,
+            )
         if(sort_by == "best"):
             return render_template("opportunities.html",opportunities=bestArr)
         if(sort_by == "soonest"):
